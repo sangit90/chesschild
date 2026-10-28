@@ -25,26 +25,31 @@ struct GameView: View {
     var body: some View {
         GeometryReader { geometry in
             let landscape = geometry.size.width > geometry.size.height
-            ScrollView {
-                VStack(spacing: 18) {
-                    header
-                    if landscape {
-                        HStack(alignment: .top, spacing: 26) {
-                            boardCard
-                                .frame(maxWidth: min(geometry.size.height - 125, 620))
-                            controls
-                                .frame(maxWidth: 310)
-                        }
-                    } else {
-                        boardCard.frame(maxWidth: 620)
-                        controls.frame(maxWidth: 620)
+            let boardSide = max(280, min(
+                landscape ? geometry.size.height - 170 : geometry.size.height - 390,
+                landscape ? geometry.size.width - 400 : geometry.size.width - 48,
+                640
+            ))
+            VStack(spacing: landscape ? 12 : 10) {
+                header
+                if landscape {
+                    HStack(alignment: .top, spacing: 18) {
+                        boardCard(side: boardSide)
+                            .frame(width: boardSide + 28)
+                        controls(compact: false)
+                            .frame(maxWidth: 320)
                     }
+                } else {
+                    boardCard(side: boardSide)
+                        .frame(width: boardSide + 28)
+                    controls(compact: true)
+                        .frame(maxWidth: boardSide + 28)
                 }
-                .frame(maxWidth: 1020)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 22)
-                .padding(.vertical, 24)
+                Spacer(minLength: 0)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.horizontal, landscape ? 16 : 18)
+            .padding(.top, landscape ? 8 : 12)
             .background(
                 LinearGradient(colors: [Palette.cream, Color(red: 0.86, green: 0.94, blue: 0.91)], startPoint: .topLeading, endPoint: .bottomTrailing)
                     .ignoresSafeArea()
@@ -75,39 +80,42 @@ struct GameView: View {
         }
     }
 
-    private var boardCard: some View {
-        VStack(spacing: 12) {
+    private func boardCard(side: CGFloat) -> some View {
+        let size = side / 8
+        return VStack(spacing: 8) {
             HStack {
                 Label(game.position.turn == .white ? "Lượt của bé" : "Máy đang nghĩ...", systemImage: game.position.turn == .white ? "hand.point.up.left.fill" : "sparkles")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                 Spacer()
-                Text("BÉ ♔  •  MÁY ♚")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                HStack(spacing: 5) {
+                    Circle().fill(Palette.cream).overlay(Circle().stroke(Palette.ink, lineWidth: 1)).frame(width: 13, height: 13)
+                    Text("BÉ")
+                    Text("•").padding(.horizontal, 2)
+                    Circle().fill(Palette.ink).frame(width: 13, height: 13)
+                    Text("MÁY")
+                }
+                .font(.system(size: 11, weight: .bold, design: .rounded))
             }
             .foregroundColor(Palette.ink)
 
-            GeometryReader { proxy in
-                let size = proxy.size.width / 8
-                ZStack(alignment: .topLeading) {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 8), spacing: 0) {
-                        ForEach(0..<64, id: \.self) { index in
-                            square(index, size: size)
-                        }
-                    }
-                    if let moving {
-                        pieceView(moving.piece, size: size)
-                            .position(x: CGFloat(movingAt % 8) * size + size / 2,
-                                      y: CGFloat(movingAt / 8) * size + size / 2)
-                            .allowsHitTesting(false)
-                            .zIndex(10)
+            ZStack(alignment: .topLeading) {
+                LazyVGrid(columns: Array(repeating: GridItem(.fixed(size), spacing: 0), count: 8), spacing: 0) {
+                    ForEach(0..<64, id: \.self) { index in
+                        square(index, size: size)
                     }
                 }
-                .frame(width: proxy.size.width, height: proxy.size.width)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Palette.ink.opacity(0.14), lineWidth: 2))
-                .shadow(color: Palette.ink.opacity(0.16), radius: 12, y: 7)
+                if let moving {
+                    pieceView(moving.piece, size: size)
+                        .position(x: CGFloat(movingAt % 8) * size + size / 2,
+                                  y: CGFloat(movingAt / 8) * size + size / 2)
+                        .allowsHitTesting(false)
+                        .zIndex(10)
+                }
             }
-            .aspectRatio(1, contentMode: .fit)
+            .frame(width: side, height: side)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Palette.ink.opacity(0.14), lineWidth: 2))
+            .shadow(color: Palette.ink.opacity(0.16), radius: 12, y: 7)
 
             HStack {
                 ForEach(0..<8, id: \.self) { col in
@@ -115,10 +123,11 @@ struct GameView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
+            .frame(width: side)
             .font(.system(size: 11, weight: .bold, design: .rounded))
             .foregroundColor(Palette.dark)
         }
-        .padding(18)
+        .padding(14)
         .background(.white.opacity(0.76), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
     }
 
@@ -166,76 +175,114 @@ struct GameView: View {
     private func pieceView(_ piece: Piece, size: CGFloat) -> some View {
         ZStack {
             Circle()
-                .fill(piece.side == .white ? Palette.cream : Palette.gold)
-                .overlay(Circle().stroke(Palette.ink.opacity(0.55), lineWidth: 1.5))
-                .frame(width: size * 0.72, height: size * 0.72)
+                .fill(LinearGradient(
+                    colors: piece.side == .white ? [.white, Palette.cream] : [Palette.dark, Palette.ink],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ))
+                .overlay(Circle().strokeBorder(piece.side == .white ? Palette.ink.opacity(0.65) : Palette.cream.opacity(0.75), lineWidth: 1.5))
+                .frame(width: size * 0.78, height: size * 0.78)
+                .shadow(color: Palette.ink.opacity(0.22), radius: 2, y: 2)
             Text(piece.glyph)
-                .font(.system(size: size * 0.72, weight: .regular, design: .serif))
-                .foregroundColor(Palette.ink)
-                .shadow(color: Color.white.opacity(0.5), radius: 1, x: 0, y: 1)
+                .font(.system(size: size * 0.61, weight: .regular, design: .serif))
+                .foregroundColor(piece.side == .white ? Palette.ink : Palette.cream)
         }
         .frame(width: size, height: size)
     }
 
-    private var controls: some View {
-        VStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Label("THỬ THÁCH \(min(game.lessonStage + 1, 4))/4", systemImage: "star.fill")
-                        .foregroundColor(Palette.dark)
-                    Spacer()
-                    Text("⭐ \(game.stars)")
-                        .foregroundColor(Palette.ink)
+    private func controls(compact: Bool) -> some View {
+        VStack(spacing: compact ? 9 : 12) {
+            if compact {
+                HStack(alignment: .top, spacing: 10) {
+                    missionCard(compact: true)
+                    coachCard(compact: true)
                 }
-                .font(.system(size: 12, weight: .heavy, design: .rounded))
-                Text(game.missionTitle)
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundColor(Palette.ink)
-                Text(game.missionDetail)
-                    .font(.system(size: 14, design: .rounded))
-                    .foregroundColor(Palette.dark)
+            } else {
+                missionCard(compact: false)
+                coachCard(compact: false)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(18)
-            .background(Palette.gold.opacity(0.27), in: RoundedRectangle(cornerRadius: 22))
-
-            VStack(alignment: .leading, spacing: 10) {
-                Label("THẦY CỜ BÊN CẠNH", systemImage: "sparkles")
-                    .font(.system(size: 12, weight: .heavy, design: .rounded))
-                    .foregroundColor(Palette.dark)
-                Text(game.message)
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
-                    .foregroundColor(Palette.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, minHeight: 70, alignment: .topLeading)
-            }
-            .padding(20)
-            .background(.white.opacity(0.86), in: RoundedRectangle(cornerRadius: 22))
-
-            HStack(spacing: 10) {
-                action("Gợi ý", icon: "lightbulb.fill", color: Palette.gold) { game.hint() }
-                    .disabled(game.position.turn != .white || game.isFinished || moving != nil)
-                action("Đi lại", icon: "arrow.uturn.backward", color: Palette.light) { game.undo() }
-                    .disabled(!game.canUndo || moving != nil)
-            }
-
-            HStack(spacing: 10) {
-                action("Ván mới", icon: "arrow.clockwise", color: Palette.light) { game.reset() }
-                    .disabled(moving != nil)
-                Menu {
-                    Button("Tập chơi") { game.difficulty = 0 }
-                    Button("Thử thách") { game.difficulty = 1 }
-                } label: {
-                    Label(game.difficulty == 0 ? "Tập chơi" : "Thử thách", systemImage: "slider.horizontal.3")
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundColor(Palette.ink)
-                        .frame(maxWidth: .infinity, minHeight: 48)
-                        .background(Palette.light, in: RoundedRectangle(cornerRadius: 14))
+            if compact {
+                HStack(spacing: 8) {
+                    hintButton
+                    undoButton
+                    newGameButton
+                    difficultyMenu
                 }
+            } else {
+                HStack(spacing: 10) { hintButton; undoButton }
+                HStack(spacing: 10) { newGameButton; difficultyMenu }
             }
             Text("Đã chơi \(game.games) ván • Thắng \(game.wins) ván")
-                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .font(.system(size: 13, weight: .medium, design: .rounded))
                 .foregroundColor(Palette.dark)
+        }
+    }
+
+    private func missionCard(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 4 : 6) {
+            HStack {
+                Label("THỬ THÁCH \(min(game.lessonStage + 1, 4))/4", systemImage: "star.fill")
+                    .foregroundColor(Palette.dark)
+                Spacer(minLength: 2)
+                Text("⭐ \(game.stars)")
+                    .foregroundColor(Palette.ink)
+            }
+            .font(.system(size: 11, weight: .heavy, design: .rounded))
+            Text(game.missionTitle)
+                .font(.system(size: compact ? 16 : 18, weight: .bold, design: .rounded))
+                .foregroundColor(Palette.ink)
+                .lineLimit(2)
+            Text(game.missionDetail)
+                .font(.system(size: compact ? 13 : 14, design: .rounded))
+                .foregroundColor(Palette.dark)
+                .lineLimit(compact ? 2 : 3)
+        }
+        .frame(maxWidth: .infinity, minHeight: compact ? 103 : 0, alignment: .topLeading)
+        .padding(compact ? 13 : 18)
+        .background(Palette.gold.opacity(0.27), in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    private func coachCard(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 4 : 8) {
+            Label("THẦY CỜ BÊN CẠNH", systemImage: "sparkles")
+                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                .foregroundColor(Palette.dark)
+            Text(game.message)
+                .font(.system(size: compact ? 15 : 17, weight: .semibold, design: .rounded))
+                .foregroundColor(Palette.ink)
+                .lineLimit(compact ? 4 : 6)
+                .minimumScaleFactor(0.85)
+        }
+        .frame(maxWidth: .infinity, minHeight: compact ? 103 : 80, alignment: .topLeading)
+        .padding(compact ? 13 : 18)
+        .background(.white.opacity(0.86), in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    private var hintButton: some View {
+        action("Gợi ý", icon: "lightbulb.fill", color: Palette.gold) { game.hint() }
+            .disabled(game.position.turn != .white || game.isFinished || moving != nil)
+    }
+
+    private var undoButton: some View {
+        action("Đi lại", icon: "arrow.uturn.backward", color: Palette.light) { game.undo() }
+            .disabled(!game.canUndo || moving != nil)
+    }
+
+    private var newGameButton: some View {
+        action("Ván mới", icon: "arrow.clockwise", color: Palette.light) { game.reset() }
+            .disabled(moving != nil)
+    }
+
+    private var difficultyMenu: some View {
+        Menu {
+            Button("Tập chơi") { game.difficulty = 0 }
+            Button("Thử thách") { game.difficulty = 1 }
+        } label: {
+            Label(game.difficulty == 0 ? "Tập chơi" : "Thử thách", systemImage: "slider.horizontal.3")
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundColor(Palette.ink)
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .background(Palette.light, in: RoundedRectangle(cornerRadius: 14))
         }
     }
 

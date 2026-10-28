@@ -48,10 +48,15 @@ struct Piece: Equatable, Codable {
     let kind: Kind
 
     var glyph: String {
-        let white = ["♔", "♕", "♖", "♗", "♘", "♙"]
-        let black = ["♚", "♛", "♜", "♝", "♞", "♟"]
-        let order: [Kind] = [.king, .queen, .rook, .bishop, .knight, .pawn]
-        return (side == .white ? white : black)[order.firstIndex(of: kind)!]
+        // One silhouette set for both sides; color carries the team distinction.
+        switch kind {
+        case .king: return "♚"
+        case .queen: return "♛"
+        case .rook: return "♜"
+        case .bishop: return "♝"
+        case .knight: return "♞"
+        case .pawn: return "♟"
+        }
     }
 }
 
