@@ -24,3 +24,4 @@ Project dùng iOS 15 làm mức tối thiểu và chỉ nhắm đến iPad. Khi 
 ## Phạm vi bản đầu
 
 Luật cờ gồm chiếu, chiếu hết, hòa do hết nước đi, nhập thành, bắt tốt qua đường và phong Hậu tự động. Trợ lý gợi ý một nước đi và giải thích cách đi của quân đang chọn. Đây là bản học qua thực hành; lộ trình bài học, bài tập thế cờ, âm thanh và đánh giá kỹ năng theo chủ đề có thể bổ sung ở các bản sau.
+"# chesschild" 
