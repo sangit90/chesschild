@@ -21,6 +21,7 @@ jobs:
         run: swiftc ChessChild/Chess.swift Tests/main.swift -o /tmp/chesschild-rules && /tmp/chesschild-rules
       - name: Build for iPad
         run: |
+          set +e
           xcodebuild \
             -project ChessChild.xcodeproj \
             -scheme ChessChild \
@@ -28,7 +29,19 @@ jobs:
             -sdk iphoneos \
             -derivedDataPath "$RUNNER_TEMP/ChessChildBuild" \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build > "$RUNNER_TEMP/xcodebuild.log" 2>&1
+          result=$?
+          if [ "$result" -ne 0 ]; then
+            echo '### Xcode build errors' >> "$GITHUB_STEP_SUMMARY"
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            grep -E 'error:|BUILD FAILED|The following build commands failed' "$RUNNER_TEMP/xcodebuild.log" | tail -n 30 | tee -a "$GITHUB_STEP_SUMMARY" | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 80 "$RUNNER_TEMP/xcodebuild.log"
+            exit "$result"
+          fi
+          tail -n 20 "$RUNNER_TEMP/xcodebuild.log"
       - name: Package IPA for Sideloadly
         run: |
           mkdir -p Payload
