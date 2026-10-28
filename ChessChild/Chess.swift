@@ -46,18 +46,6 @@ enum Kind: String, Codable, CaseIterable {
 struct Piece: Equatable, Codable {
     let side: Side
     let kind: Kind
-
-    var glyph: String {
-        // One silhouette set for both sides; color carries the team distinction.
-        switch kind {
-        case .king: return "♚"
-        case .queen: return "♛"
-        case .rook: return "♜"
-        case .bishop: return "♝"
-        case .knight: return "♞"
-        case .pawn: return "♟"
-        }
-    }
 }
 
 struct Move: Equatable {

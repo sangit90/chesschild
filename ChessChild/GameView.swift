@@ -173,21 +173,7 @@ struct GameView: View {
     }
 
     private func pieceView(_ piece: Piece, size: CGFloat) -> some View {
-        ZStack {
-            Circle()
-                .fill(LinearGradient(
-                    colors: piece.side == .white ? [.white, Palette.cream] : [Palette.dark, Palette.ink],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ))
-                .overlay(Circle().strokeBorder(piece.side == .white ? Palette.ink.opacity(0.65) : Palette.cream.opacity(0.75), lineWidth: 1.5))
-                .frame(width: size * 0.78, height: size * 0.78)
-                .shadow(color: Palette.ink.opacity(0.22), radius: 2, y: 2)
-            Text(piece.glyph)
-                .font(.system(size: size * 0.61, weight: .regular, design: .serif))
-                .foregroundColor(piece.side == .white ? Palette.ink : Palette.cream)
-        }
-        .frame(width: size, height: size)
+        ChessPieceView(piece: piece, size: size)
     }
 
     private func controls(compact: Bool) -> some View {
@@ -351,10 +337,7 @@ struct GameView: View {
                         .font(.system(size: 18, design: .rounded))
                     ForEach(Kind.allCases, id: \.self) { kind in
                         HStack(alignment: .top, spacing: 12) {
-                            Text(Piece(side: .white, kind: kind).glyph)
-                                .font(.system(size: 34))
-                                .foregroundColor(Palette.dark)
-                                .frame(width: 44)
+                            ChessPieceView(piece: Piece(side: .white, kind: kind), size: 44)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(kind.name).font(.headline)
                                 Text(kind.lesson).font(.body)
