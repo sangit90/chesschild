@@ -58,7 +58,7 @@ struct GameView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("CỜ VUA CỦA BÉ")
                     .font(.system(size: 13, weight: .heavy, design: .rounded))
-                    .tracking(2.5)
+                    .kerning(2.5)
                     .foregroundColor(Palette.dark)
                 Text("Mỗi nước đi, một điều mới ✨")
                     .font(.system(size: 25, weight: .bold, design: .rounded))
@@ -203,7 +203,7 @@ struct GameView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Label("THẦY CỜ BÊN CẠNH", systemImage: "sparkles")
                     .font(.system(size: 12, weight: .heavy, design: .rounded))
-                    .tracking(1.4)
+                    .kerning(1.4)
                     .foregroundColor(Palette.dark)
                 Text(game.message)
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
