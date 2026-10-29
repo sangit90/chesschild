@@ -99,7 +99,7 @@ struct GameView: View {
             }
             .foregroundColor(Palette.ink)
 
-            fileLabels(side: side)
+            fileLabels(side: side, opposite: true)
 
             ZStack(alignment: .topLeading) {
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(size), spacing: 0), count: 8), spacing: 0) {
@@ -120,7 +120,7 @@ struct GameView: View {
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Palette.ink.opacity(0.14), lineWidth: 2))
             .shadow(color: Palette.ink.opacity(0.16), radius: 12, y: 7)
 
-            fileLabels(side: side)
+            fileLabels(side: side, opposite: false)
         }
         .padding(14)
         .background(.white.opacity(0.76), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
@@ -130,11 +130,12 @@ struct GameView: View {
         game.mode == .computer && game.playerSide == .black
     }
 
-    private func fileLabels(side: CGFloat) -> some View {
+    private func fileLabels(side: CGFloat, opposite: Bool) -> some View {
         HStack {
             ForEach(0..<8, id: \.self) { col in
                 Text(String(UnicodeScalar(isBoardFlipped ? 72 - col : 65 + col)!))
                     .frame(maxWidth: .infinity)
+                    .rotationEffect(.degrees(opposite ? 180 : 0))
             }
         }
         .frame(width: side)
@@ -177,6 +178,7 @@ struct GameView: View {
                 Text("\(8 - index / 8)")
                     .font(.system(size: max(9, size * 0.16), weight: .heavy, design: .rounded))
                     .foregroundColor((index / 8 + index % 8).isMultiple(of: 2) ? Palette.dark : Palette.light)
+                    .rotationEffect(.degrees(boardIndex(index) % 8 == 7 ? 180 : 0))
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: boardIndex(index) % 8 == 0 ? .topLeading : .topTrailing)
                     .padding(3)
             }
