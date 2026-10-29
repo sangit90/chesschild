@@ -26,7 +26,7 @@ struct GameView: View {
         GeometryReader { geometry in
             let landscape = geometry.size.width > geometry.size.height
             let boardSide = max(280, min(
-                landscape ? geometry.size.height - 170 : geometry.size.height - 390,
+                landscape ? geometry.size.height - 170 : geometry.size.height - 440,
                 landscape ? geometry.size.width - 400 : geometry.size.width - 48,
                 640
             ))
@@ -84,15 +84,15 @@ struct GameView: View {
         let size = side / 8
         return VStack(spacing: 8) {
             HStack {
-                Label(game.position.turn == .white ? "Lượt của bé" : "Máy đang nghĩ...", systemImage: game.position.turn == .white ? "hand.point.up.left.fill" : "sparkles")
+                Label(game.mode == .twoPlayers ? "Lượt của \(game.position.turn == .white ? "Trắng" : "Đen")" : (game.position.turn == .white ? "Lượt của bé" : "Máy đang nghĩ..."), systemImage: game.mode == .computer && game.position.turn == .black ? "sparkles" : "hand.point.up.left.fill")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                 Spacer()
                 HStack(spacing: 5) {
                     Circle().fill(Palette.cream).overlay(Circle().stroke(Palette.ink, lineWidth: 1)).frame(width: 13, height: 13)
-                    Text("BÉ")
+                    Text(game.mode == .computer ? "BÉ" : "TRẮNG")
                     Text("•").padding(.horizontal, 2)
                     Circle().fill(Palette.ink).frame(width: 13, height: 13)
-                    Text("MÁY")
+                    Text(game.mode == .computer ? "MÁY" : "ĐEN")
                 }
                 .font(.system(size: 11, weight: .bold, design: .rounded))
             }
@@ -134,7 +134,7 @@ struct GameView: View {
     private func square(_ index: Int, size: CGFloat) -> some View {
         let highlighted = game.legalSelection.contains(where: { $0.to == index })
         let suggested = game.suggested?.to == index
-        let checkedKing = game.position.squares[index] == Piece(side: .white, kind: .king) && game.position.inCheck(.white)
+        let checkedKing = game.position.squares[index] == Piece(side: game.position.turn, kind: .king) && game.position.inCheck(game.position.turn)
         return ZStack {
             Rectangle()
                 .fill((index / 8 + index % 8).isMultiple(of: 2) ? Palette.light : Palette.dark)
@@ -178,13 +178,17 @@ struct GameView: View {
 
     private func controls(compact: Bool) -> some View {
         VStack(spacing: compact ? 9 : 12) {
-            if compact {
+            HStack(spacing: 8) {
+                modeMenu
+                if game.mode == .computer { difficultyMenu }
+            }
+            if game.mode == .computer && compact {
                 HStack(alignment: .top, spacing: 10) {
                     missionCard(compact: true)
                     coachCard(compact: true)
                 }
             } else {
-                missionCard(compact: false)
+                if game.mode == .computer { missionCard(compact: false) }
                 coachCard(compact: false)
             }
             if compact {
@@ -192,15 +196,16 @@ struct GameView: View {
                     hintButton
                     undoButton
                     newGameButton
-                    difficultyMenu
                 }
             } else {
                 HStack(spacing: 10) { hintButton; undoButton }
-                HStack(spacing: 10) { newGameButton; difficultyMenu }
+                newGameButton
             }
-            Text("Đã chơi \(game.games) ván • Thắng \(game.wins) ván")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundColor(Palette.dark)
+            if game.mode == .computer {
+                Text("Đã chơi \(game.games) ván • Thắng \(game.wins) ván")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(Palette.dark)
+            }
         }
     }
 
@@ -230,7 +235,7 @@ struct GameView: View {
 
     private func coachCard(compact: Bool) -> some View {
         VStack(alignment: .leading, spacing: compact ? 4 : 8) {
-            Label("THẦY CỜ BÊN CẠNH", systemImage: "sparkles")
+            Label(game.mode == .computer ? "THẦY CỜ BÊN CẠNH" : "HƯỚNG DẪN LƯỢT CHƠI", systemImage: "sparkles")
                 .font(.system(size: 11, weight: .heavy, design: .rounded))
                 .foregroundColor(Palette.dark)
             Text(game.message)
@@ -246,7 +251,7 @@ struct GameView: View {
 
     private var hintButton: some View {
         action("Gợi ý", icon: "lightbulb.fill", color: Palette.gold) { game.hint() }
-            .disabled(game.position.turn != .white || game.isFinished || moving != nil)
+            .disabled((game.mode == .computer && game.position.turn != .white) || game.isFinished || moving != nil)
     }
 
     private var undoButton: some View {
@@ -270,6 +275,20 @@ struct GameView: View {
                 .frame(maxWidth: .infinity, minHeight: 48)
                 .background(Palette.light, in: RoundedRectangle(cornerRadius: 14))
         }
+    }
+
+    private var modeMenu: some View {
+        Menu {
+            Button("Chơi với máy") { game.setMode(.computer) }
+            Button("Hai người chơi") { game.setMode(.twoPlayers) }
+        } label: {
+            Label(game.mode == .computer ? "Chơi với máy" : "Hai người chơi", systemImage: "person.2.fill")
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundColor(Palette.ink)
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .background(Palette.light, in: RoundedRectangle(cornerRadius: 14))
+        }
+        .disabled(moving != nil)
     }
 
     private func action(_ title: String, icon: String, color: Color, handler: @escaping () -> Void) -> some View {
@@ -298,18 +317,21 @@ struct GameView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
             game.play(move)
             moving = nil
-            if game.position.result?.contains("Bé đã thắng") == true {
+            let celebrate = game.mode == .twoPlayers
+                ? game.resultMessage?.contains("thắng") == true
+                : game.resultMessage?.contains("Bé đã thắng") == true
+            if celebrate {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
-            if game.position.turn == .black && !game.isFinished { computerTurn() }
+            if game.mode == .computer && game.position.turn == .black && !game.isFinished { computerTurn() }
         }
     }
 
     private func computerTurn() {
-        guard !pendingComputer else { return }
+        guard game.mode == .computer && !pendingComputer else { return }
         pendingComputer = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-            guard game.position.turn == .black, moving == nil else {
+            guard game.mode == .computer, game.position.turn == .black, moving == nil else {
                 pendingComputer = false
                 return
             }
@@ -319,8 +341,8 @@ struct GameView: View {
                 let move = ChessCoach.bestMove(in: snapshot, for: .black, difficulty: difficulty)
                 DispatchQueue.main.async {
                     pendingComputer = false
-                    guard game.position == snapshot, moving == nil else {
-                        if game.position.turn == .black && moving == nil { computerTurn() }
+                    guard game.mode == .computer, game.position == snapshot, moving == nil else {
+                        if game.mode == .computer && game.position.turn == .black && moving == nil { computerTurn() }
                         return
                     }
                     if let move { animate(move) }
@@ -333,7 +355,7 @@ struct GameView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Bé cầm quân trắng và đi trước. Chạm một quân để thấy các ô sáng có thể đi, rồi chạm ô đích. Nút Gợi ý sẽ chỉ một nước đáng thử. Nút Đi lại cho bé sửa nước vừa đi.")
+                    Text("Chọn Chơi với máy hoặc Hai người chơi trên cùng iPad. Quân trắng đi trước. Chạm một quân của bên tới lượt để thấy các ô có thể đi, rồi chạm ô đích. Nhấn Gợi ý nhiều lần để xem các phương án khác nhau. Nút Đi lại hoàn tác lượt vừa đi.")
                         .font(.system(size: 18, design: .rounded))
                     ForEach(Kind.allCases, id: \.self) { kind in
                         HStack(alignment: .top, spacing: 12) {

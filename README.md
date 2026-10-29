@@ -1,6 +1,6 @@
 # Cờ Vua Của Bé
 
-Ứng dụng cờ vua một người cho iPad 6, viết bằng SwiftUI. Bé cầm quân trắng, chọn quân để xem nước đi hợp lệ, bấm **Gợi ý** khi cần, **Đi lại** để thử cách khác và học cách đi của từng quân ngay trong lúc chơi. Bốn thử thách đầu tiên dẫn bé từ kiểm soát trung tâm đến phát triển Mã, ăn quân và nhập thành. Máy có hai mức **Tập chơi** và **Thử thách**. Tiến bộ (số ván, số thắng, sao thử thách) được lưu trên iPad.
+Ứng dụng cờ vua cho iPad 6, viết bằng SwiftUI. Có thể chọn **Chơi với máy** hoặc **Hai người chơi** trên cùng iPad. Trong chế độ hai người, quân Trắng và Đen lần lượt đi; nút **Đi lại** hoàn tác một nước. Trong chế độ chơi với máy, bé cầm quân trắng và có bốn thử thách đầu tiên: kiểm soát trung tâm, phát triển Mã, ăn quân và nhập thành. Máy có hai mức **Tập chơi** và **Thử thách**. Bấm **Gợi ý** nhiều lần để lần lượt xem các phương án khác nhau cho bên đang đi; danh sách được làm mới sau mỗi nước đi. Tiến bộ khi chơi với máy (số ván, số thắng, sao thử thách) được lưu trên iPad.
 
 ## Tạo IPA bằng GitHub Actions
 
@@ -23,5 +23,5 @@ Project dùng iOS 15 làm mức tối thiểu và chỉ nhắm đến iPad. Khi 
 
 ## Phạm vi bản đầu
 
-Luật cờ gồm chiếu, chiếu hết, hòa do hết nước đi, nhập thành, bắt tốt qua đường và phong Hậu tự động. Trợ lý gợi ý một nước đi và giải thích cách đi của quân đang chọn. Đây là bản học qua thực hành; lộ trình bài học, bài tập thế cờ, âm thanh và đánh giá kỹ năng theo chủ đề có thể bổ sung ở các bản sau.
+Luật cờ gồm chiếu, chiếu hết, hòa do hết nước đi, nhập thành, bắt tốt qua đường và phong Hậu tự động. Trợ lý gợi ý tối đa tám nước ứng viên được xếp hạng, rồi quay lại từ đầu khi đã xem hết; nếu chỉ còn một nước hợp lệ, gợi ý đó sẽ lặp lại. Đây là bản học qua thực hành; lộ trình bài học, bài tập thế cờ, âm thanh và đánh giá kỹ năng theo chủ đề có thể bổ sung ở các bản sau.
 "# chesschild" 

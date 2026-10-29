@@ -1,6 +1,11 @@
 import Combine
 import Foundation
 
+enum GameMode: Equatable {
+    case computer
+    case twoPlayers
+}
+
 @MainActor
 final class GameSession: ObservableObject {
     private struct Snapshot {
@@ -13,16 +18,24 @@ final class GameSession: ObservableObject {
     @Published var suggested: Move? = nil
     @Published var message = "Chạm vào một quân trắng để xem các nước đi nhé!"
     @Published var difficulty = 0
+    @Published private(set) var mode: GameMode = .computer
     @Published private(set) var wins = UserDefaults.standard.integer(forKey: "chesschild.wins")
     @Published private(set) var games = UserDefaults.standard.integer(forKey: "chesschild.games")
     @Published private(set) var lessonStage = UserDefaults.standard.integer(forKey: "chesschild.lessonStage")
     @Published private(set) var stars = UserDefaults.standard.integer(forKey: "chesschild.stars")
     private var snapshots: [Snapshot] = []
     private var recordedResult = false
+    private var hintChoices: [Move] = []
+    private var nextHintIndex = 0
 
     var legalSelection: [Move] { selected.map { position.legalMoves(from: $0) } ?? [] }
     var canUndo: Bool { !snapshots.isEmpty }
     var isFinished: Bool { position.result != nil }
+    var resultMessage: String? {
+        guard let result = position.result else { return nil }
+        guard mode == .twoPlayers, result.contains("thắng") || result.contains("Chiếu hết") else { return result }
+        return "Chiếu hết! Người chơi \(position.turn.opponent == .white ? "Trắng" : "Đen") thắng! 🎉"
+    }
     var missionTitle: String {
         switch lessonStage {
         case 0: return "Đưa Tốt vào trung tâm"
@@ -48,22 +61,29 @@ final class GameSession: ObservableObject {
         selected = nil
         suggested = nil
         recordedResult = false
-        message = "Ván mới bắt đầu. Bé cầm quân trắng và đi trước!"
+        clearHints()
+        message = mode == .computer ? "Ván mới bắt đầu. Bé cầm quân trắng và đi trước!" : "Ván mới bắt đầu. Người chơi Trắng đi trước!"
+    }
+
+    func setMode(_ newMode: GameMode) {
+        guard mode != newMode else { return }
+        mode = newMode
+        reset()
     }
 
     func select(_ index: Int) -> Move? {
-        guard !isFinished, position.turn == .white else { return nil }
+        guard !isFinished, mode == .twoPlayers || position.turn == .white else { return nil }
         if let selected, let move = position.legalMoves(from: selected).first(where: { $0.to == index }) {
             return move
         }
-        if let piece = position.squares[index], piece.side == .white {
+        if let piece = position.squares[index], piece.side == position.turn {
             selected = index
             suggested = nil
             let count = position.legalMoves(from: index).count
             message = "\(piece.kind.name): \(piece.kind.lesson) Có \(count) ô hợp lệ."
         } else {
             selected = nil
-            message = "Hãy chọn một quân trắng của bé."
+            message = mode == .computer ? "Hãy chọn một quân trắng của bé." : "Hãy chọn quân \(position.turn == .white ? "Trắng" : "Đen") để đi."
         }
         return nil
     }
@@ -74,7 +94,7 @@ final class GameSession: ObservableObject {
         let captured = position.squares[move.to] != nil || move.isEnPassant
         snapshots.append(Snapshot(position: position, lessonStage: lessonStage, stars: stars))
         position.apply(move)
-        if piece.side == .white && completesMission(move, piece: piece, captured: captured) {
+        if mode == .computer && piece.side == .white && completesMission(move, piece: piece, captured: captured) {
             lessonStage += 1
             stars += 1
             UserDefaults.standard.set(lessonStage, forKey: "chesschild.lessonStage")
@@ -83,9 +103,16 @@ final class GameSession: ObservableObject {
         }
         selected = nil
         suggested = nil
+        clearHints()
         if let result = position.result {
-            message = result
-            record(result)
+            message = resultMessage ?? result
+            if mode == .computer { record(result) }
+        } else if mode == .twoPlayers {
+            if position.inCheck(position.turn) {
+                message = "Vua \(position.turn == .white ? "Trắng" : "Đen") đang bị chiếu! Hãy tìm nước bảo vệ Vua."
+            } else {
+                message = "Đến lượt người chơi \(position.turn == .white ? "Trắng" : "Đen")."
+            }
         } else if position.inCheck(position.turn) {
             message = piece.side == .white ? "Hay lắm! Bé đang chiếu Vua của máy." : "Vua của bé đang bị chiếu. Hãy tìm cách bảo vệ Vua!"
         } else if move.isCastle {
@@ -97,7 +124,7 @@ final class GameSession: ObservableObject {
         } else {
             message = piece.side == .white ? "Đẹp lắm! Đến lượt máy suy nghĩ..." : "Đến lượt bé. Chọn quân và thử một kế hoạch mới!"
         }
-        if piece.side == .white && lessonStage > snapshots.last!.lessonStage && position.result == nil {
+        if mode == .computer && piece.side == .white && lessonStage > snapshots.last!.lessonStage && position.result == nil {
             message = "Hoàn thành thử thách! Bé nhận được một ngôi sao ⭐"
         }
     }
@@ -110,8 +137,8 @@ final class GameSession: ObservableObject {
             UserDefaults.standard.set(games, forKey: "chesschild.games")
             UserDefaults.standard.set(wins, forKey: "chesschild.wins")
         }
-        // Return to the position before the child's most recent move.
-        if position.turn == .white && snapshots.count >= 2 { snapshots.removeLast() }
+        // Against the computer, return to the child's previous turn. In two-player mode, undo one move.
+        if mode == .computer && position.turn == .white && snapshots.count >= 2 { snapshots.removeLast() }
         let snapshot = snapshots.removeLast()
         position = snapshot.position
         lessonStage = snapshot.lessonStage
@@ -120,26 +147,37 @@ final class GameSession: ObservableObject {
         UserDefaults.standard.set(stars, forKey: "chesschild.stars")
         selected = nil
         suggested = nil
+        clearHints()
         recordedResult = false
-        message = "Mình thử một cách khác nhé. Chạm quân trắng để đi tiếp!"
+        message = mode == .computer ? "Mình thử một cách khác nhé. Chạm quân trắng để đi tiếp!" : "Đi lại! Đến lượt người chơi \(position.turn == .white ? "Trắng" : "Đen")."
     }
 
     func hint() {
-        guard position.turn == .white, !isFinished else { return }
-        let moves = position.legalMoves()
-        let missionMove = moves.first { move in
-            guard let piece = position.squares[move.from] else { return false }
-            return completesMission(move, piece: piece, captured: position.squares[move.to] != nil || move.isEnPassant)
+        guard (mode == .twoPlayers || position.turn == .white), !isFinished else { return }
+        if hintChoices.isEmpty {
+            let ranked = ChessCoach.rankedMoves(in: position, for: position.turn)
+            if mode == .computer {
+                let mission = position.legalMoves().filter { move in
+                    guard let piece = position.squares[move.from] else { return false }
+                    return completesMission(move, piece: piece, captured: position.squares[move.to] != nil || move.isEnPassant)
+                }
+                hintChoices = Array((mission + ranked.filter { !mission.contains($0) }).prefix(8))
+            } else {
+                hintChoices = ranked
+            }
         }
-        guard let move = missionMove ?? ChessCoach.bestMove(in: position, for: .white, difficulty: 1) ?? moves.first else { return }
+        guard !hintChoices.isEmpty else { return }
+        let move = hintChoices[nextHintIndex]
+        nextHintIndex = (nextHintIndex + 1) % hintChoices.count
         selected = move.from
         suggested = move
         let piece = position.squares[move.from]!
-        message = "Gợi ý: thử đưa \(piece.kind.name) từ \(ChessPosition.coordinate(move.from)) đến \(ChessPosition.coordinate(move.to)). Bé hãy chạm ô sáng!"
+        let anotherHint = hintChoices.count > 1 ? " Nhấn tiếp để xem cách khác!" : " Đây là nước hợp lệ duy nhất."
+        message = "Gợi ý \(nextHintIndex == 0 ? hintChoices.count : nextHintIndex)/\(hintChoices.count): đưa \(piece.kind.name) từ \(ChessPosition.coordinate(move.from)) đến \(ChessPosition.coordinate(move.to)).\(anotherHint)"
     }
 
     func computerMove() -> Move? {
-        guard position.turn == .black, !isFinished else { return nil }
+        guard mode == .computer, position.turn == .black, !isFinished else { return nil }
         return ChessCoach.bestMove(in: position, for: .black, difficulty: difficulty)
     }
 
@@ -150,6 +188,11 @@ final class GameSession: ObservableObject {
         if result.contains("Bé đã thắng") { wins += 1 }
         UserDefaults.standard.set(games, forKey: "chesschild.games")
         UserDefaults.standard.set(wins, forKey: "chesschild.wins")
+    }
+
+    private func clearHints() {
+        hintChoices = []
+        nextHintIndex = 0
     }
 
     private func completesMission(_ move: Move, piece: Piece, captured: Bool) -> Bool {
@@ -164,6 +207,31 @@ final class GameSession: ObservableObject {
 }
 
 enum ChessCoach {
+    static func rankedMoves(in position: ChessPosition, for side: Side) -> [Move] {
+        guard position.turn == side else { return [] }
+        let candidates = position.legalMoves().map { move -> (Move, Int) in
+            var next = position
+            next.apply(move)
+            return (move, evaluate(next, for: side))
+        }.sorted { left, right in
+            if left.1 != right.1 { return left.1 > right.1 }
+            return left.0.from == right.0.from ? left.0.to < right.0.to : left.0.from < right.0.from
+        }
+
+        // Search the strongest candidates one reply ahead and offer those as alternatives.
+        let strongest = candidates.prefix(8).map { entry -> (Move, Int) in
+            var after = position
+            after.apply(entry.0)
+            let score = after.legalMoves().map { reply -> Int in
+                var further = after
+                further.apply(reply)
+                return evaluate(further, for: side)
+            }.min() ?? entry.1
+            return (entry.0, score)
+        }.sorted { $0.1 > $1.1 }
+        return strongest.map { $0.0 }
+    }
+
     static func bestMove(in position: ChessPosition, for side: Side, difficulty: Int) -> Move? {
         guard position.turn == side else { return nil }
         let moves = position.legalMoves()
