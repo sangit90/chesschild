@@ -1,15 +1,15 @@
 # Cờ Vua Của Bé
 
-Ứng dụng cờ vua cho iPad 6, viết bằng SwiftUI. Có thể chọn **Chơi với máy** hoặc **Hai người chơi** trên cùng iPad. Trong chế độ hai người, quân Trắng và Đen lần lượt đi; nút **Đi lại** hoàn tác một nước. Trong chế độ chơi với máy, bé chọn cầm quân **Trắng** hoặc **Đen**; nếu chọn Đen, bàn cờ xoay về phía bé và máy đi trước. Chữ cái cột được ghi ở cả mép trên và dưới, số hàng ở cả mép trái và phải; nhãn phía đối diện xoay để người ngồi bên kia đọc được, đồng thời vẫn khớp với từng ô. Đổi màu quân bắt đầu ván mới. Bé có bốn thử thách đầu tiên: kiểm soát trung tâm, phát triển Mã, ăn quân và nhập thành. Máy có hai mức **Tập chơi** và **Thử thách**. Bấm **Gợi ý** nhiều lần để lần lượt xem các phương án khác nhau cho bên đang đi; danh sách được làm mới sau mỗi nước đi. Tiến bộ khi chơi với máy (số ván, số thắng, sao thử thách) được lưu trên iPad.
+Ứng dụng cờ vua cho iPhone và iPad, viết bằng SwiftUI. Có thể chọn **Chơi với máy** hoặc **Hai người chơi** trên cùng thiết bị. Trong chế độ hai người, quân Trắng và Đen lần lượt đi; nút **Đi lại** hoàn tác một nước. Trong chế độ chơi với máy, bé chọn cầm quân **Trắng** hoặc **Đen**; nếu chọn Đen, bàn cờ xoay về phía bé và máy đi trước. Chữ cái cột được ghi ở cả mép trên và dưới, số hàng ở cả mép trái và phải; nhãn phía đối diện xoay để người ngồi bên kia đọc được, đồng thời vẫn khớp với từng ô. Đổi màu quân bắt đầu ván mới. Bé có bốn thử thách đầu tiên: kiểm soát trung tâm, phát triển Mã, ăn quân và nhập thành. Máy có hai mức **Tập chơi** và **Thử thách**. Bấm **Gợi ý** nhiều lần để lần lượt xem các phương án khác nhau cho bên đang đi; danh sách được làm mới sau mỗi nước đi. Tiến bộ khi chơi với máy (số ván, số thắng, sao thử thách) được lưu trên thiết bị.
 
 ## Tạo IPA bằng GitHub Actions
 
 1. Đưa mã nguồn lên một repository GitHub.
-2. Mở tab **Actions** → **Build iPad IPA** → **Run workflow**. Workflow cũng chạy khi push lên `main` hoặc `master`.
+2. Mở tab **Actions** → **Build iPhone and iPad IPA** → **Run workflow**. Workflow cũng chạy khi push lên `main` hoặc `master`.
 3. Khi job hoàn tất, tải artifact **ChessChild-iPad-IPA** và giải nén để lấy `ChessChild-unsigned.ipa`.
-4. Trên máy tính, mở [Sideloadly](https://sideloadly.io/), chọn iPad, kéo IPA vào cửa sổ, nhập Apple ID và chọn **Apple ID Sideload** để Sideloadly ký và cài ứng dụng.
+4. Trên máy tính, mở [Sideloadly](https://sideloadly.io/), chọn iPhone hoặc iPad, kéo IPA vào cửa sổ, nhập Apple ID và chọn **Apple ID Sideload** để Sideloadly ký và cài ứng dụng.
 
-IPA từ Actions **chưa được ký**; không cài trực tiếp bằng Files trên iPad. Sideloadly ký IPA khi cài. Với tài khoản Apple miễn phí, ứng dụng thường cần ký lại sau 7 ngày. Trên iPadOS 16 trở lên, bật **Developer Mode** trong Settings → Privacy & Security; nếu iPad báo nhà phát triển chưa tin cậy, vào Settings → General → VPN & Device Management để tin cậy tài khoản. Dùng cùng Apple ID và bundle ID để cài đè bản mới, giữ dữ liệu trên máy.
+IPA từ Actions **chưa được ký**; không cài trực tiếp bằng ứng dụng Files. Sideloadly ký IPA khi cài. Với tài khoản Apple miễn phí, ứng dụng thường cần ký lại sau 7 ngày. Trên iOS/iPadOS 16 trở lên, bật **Developer Mode** trong Settings → Privacy & Security; nếu thiết bị báo nhà phát triển chưa tin cậy, vào Settings → General → VPN & Device Management để tin cậy tài khoản. Dùng cùng Apple ID và bundle ID để cài đè bản mới, giữ dữ liệu trên máy.
 
 ## Phát triển trên Mac
 
@@ -19,7 +19,7 @@ xcodegen generate
 open ChessChild.xcodeproj
 ```
 
-Project dùng iOS 15 làm mức tối thiểu và chỉ nhắm đến iPad. Khi chạy từ Xcode trên thiết bị, chọn Team ký ứng dụng của bạn trong phần Signing & Capabilities. GitHub Actions build trên macOS và đóng gói IPA chưa ký để dùng với Sideloadly, nên không cần đưa chứng chỉ Apple lên GitHub.
+Project dùng iOS 15 làm mức tối thiểu và hỗ trợ cả iPhone lẫn iPad. Khi chạy từ Xcode trên thiết bị, chọn Team ký ứng dụng của bạn trong phần Signing & Capabilities. GitHub Actions build trên macOS và đóng gói IPA chưa ký để dùng với Sideloadly, nên không cần đưa chứng chỉ Apple lên GitHub.
 
 ## Phạm vi bản đầu
 

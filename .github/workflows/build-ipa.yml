@@ -1,4 +1,4 @@
-name: Build iPad IPA
+name: Build iPhone and iPad IPA
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ jobs:
         run: xcodegen generate
       - name: Verify chess rules
         run: swiftc ChessChild/Chess.swift Tests/main.swift -o /tmp/chesschild-rules && /tmp/chesschild-rules
-      - name: Build for iPad
+      - name: Build for iPhone and iPad
         run: |
           set +e
           xcodebuild \

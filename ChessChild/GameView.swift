@@ -24,32 +24,35 @@ struct GameView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let landscape = geometry.size.width > geometry.size.height
-            let boardSide = max(280, min(
-                landscape ? geometry.size.height - 170 : geometry.size.height - 440,
-                landscape ? geometry.size.width - 400 : geometry.size.width - 48,
-                640
-            ))
-            VStack(spacing: landscape ? 12 : 10) {
-                header
-                if landscape {
-                    HStack(alignment: .top, spacing: 18) {
-                        boardCard(side: boardSide)
+            let contentWidth = max(0, geometry.size.width - 32)
+            let sideBySide = contentWidth >= 700 && geometry.size.width > geometry.size.height
+            let narrow = contentWidth < 600
+            let boardSide = max(0, min(640, sideBySide
+                ? contentWidth - 18 - 28 - 320
+                : contentWidth - 28))
+
+            ScrollView {
+                VStack(spacing: 12) {
+                    header
+                    if sideBySide {
+                        HStack(alignment: .top, spacing: 18) {
+                            boardCard(side: boardSide, narrow: false)
+                                .frame(width: boardSide + 28)
+                            controls(compact: false, narrow: false)
+                                .frame(width: 320)
+                        }
+                    } else {
+                        boardCard(side: boardSide, narrow: narrow)
                             .frame(width: boardSide + 28)
-                        controls(compact: false)
-                            .frame(maxWidth: 320)
+                        controls(compact: true, narrow: narrow)
+                            .frame(width: boardSide + 28)
                     }
-                } else {
-                    boardCard(side: boardSide)
-                        .frame(width: boardSide + 28)
-                    controls(compact: true)
-                        .frame(maxWidth: boardSide + 28)
                 }
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, alignment: .top)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 24)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .padding(.horizontal, landscape ? 16 : 18)
-            .padding(.top, landscape ? 8 : 12)
             .background(
                 LinearGradient(colors: [Palette.cream, Color(red: 0.86, green: 0.94, blue: 0.91)], startPoint: .topLeading, endPoint: .bottomTrailing)
                     .ignoresSafeArea()
@@ -68,8 +71,9 @@ struct GameView: View {
                 Text("Mỗi nước đi, một điều mới ✨")
                     .font(.system(size: 25, weight: .bold, design: .rounded))
                     .foregroundColor(Palette.ink)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer()
+            Spacer(minLength: 8)
             Button { showingRules = true } label: {
                 Image(systemName: "questionmark")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -81,21 +85,38 @@ struct GameView: View {
         }
     }
 
-    private func boardCard(side: CGFloat) -> some View {
+    private var turnLabel: some View {
+        Label(game.mode == .twoPlayers ? "Lượt của \(game.position.turn == .white ? "Trắng" : "Đen")" : (game.position.turn == game.playerSide ? "Lượt của bé" : "Máy đang nghĩ..."), systemImage: game.mode == .computer && game.position.turn != game.playerSide ? "sparkles" : "hand.point.up.left.fill")
+            .font(.system(size: 16, weight: .bold, design: .rounded))
+    }
+
+    private var sideLegend: some View {
+        HStack(spacing: 5) {
+            Circle().fill(Palette.cream).overlay(Circle().stroke(Palette.ink, lineWidth: 1)).frame(width: 13, height: 13)
+            Text(game.mode == .computer && game.playerSide == .white ? "BÉ" : (game.mode == .computer ? "MÁY" : "TRẮNG"))
+            Text("•").padding(.horizontal, 2)
+            Circle().fill(Palette.ink).frame(width: 13, height: 13)
+            Text(game.mode == .computer && game.playerSide == .black ? "BÉ" : (game.mode == .computer ? "MÁY" : "ĐEN"))
+        }
+        .font(.system(size: 11, weight: .bold, design: .rounded))
+    }
+
+    private func boardCard(side: CGFloat, narrow: Bool) -> some View {
         let size = side / 8
         return VStack(spacing: 8) {
-            HStack {
-                Label(game.mode == .twoPlayers ? "Lượt của \(game.position.turn == .white ? "Trắng" : "Đen")" : (game.position.turn == game.playerSide ? "Lượt của bé" : "Máy đang nghĩ..."), systemImage: game.mode == .computer && game.position.turn != game.playerSide ? "sparkles" : "hand.point.up.left.fill")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                Spacer()
-                HStack(spacing: 5) {
-                    Circle().fill(Palette.cream).overlay(Circle().stroke(Palette.ink, lineWidth: 1)).frame(width: 13, height: 13)
-                    Text(game.mode == .computer && game.playerSide == .white ? "BÉ" : (game.mode == .computer ? "MÁY" : "TRẮNG"))
-                    Text("•").padding(.horizontal, 2)
-                    Circle().fill(Palette.ink).frame(width: 13, height: 13)
-                    Text(game.mode == .computer && game.playerSide == .black ? "BÉ" : (game.mode == .computer ? "MÁY" : "ĐEN"))
+            Group {
+                if narrow {
+                    VStack(alignment: .leading, spacing: 4) {
+                        turnLabel
+                        sideLegend.frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                } else {
+                    HStack {
+                        turnLabel
+                        Spacer()
+                        sideLegend
+                    }
                 }
-                .font(.system(size: 11, weight: .bold, design: .rounded))
             }
             .foregroundColor(Palette.ink)
 
@@ -195,13 +216,18 @@ struct GameView: View {
         ChessPieceView(piece: piece, size: size)
     }
 
-    private func controls(compact: Bool) -> some View {
+    private func controls(compact: Bool, narrow: Bool) -> some View {
         VStack(spacing: compact ? 9 : 12) {
-            HStack(spacing: 8) {
+            if narrow && game.mode == .computer {
                 modeMenu
-                if game.mode == .computer { colorMenu; difficultyMenu }
+                HStack(spacing: 8) { colorMenu; difficultyMenu }
+            } else {
+                HStack(spacing: 8) {
+                    modeMenu
+                    if game.mode == .computer { colorMenu; difficultyMenu }
+                }
             }
-            if game.mode == .computer && compact {
+            if game.mode == .computer && compact && !narrow {
                 HStack(alignment: .top, spacing: 10) {
                     missionCard(compact: true)
                     coachCard(compact: true)
@@ -210,7 +236,10 @@ struct GameView: View {
                 if game.mode == .computer { missionCard(compact: false) }
                 coachCard(compact: false)
             }
-            if compact {
+            if narrow {
+                HStack(spacing: 8) { hintButton; undoButton }
+                newGameButton
+            } else if compact {
                 HStack(spacing: 8) {
                     hintButton
                     undoButton
@@ -241,11 +270,11 @@ struct GameView: View {
             Text(game.missionTitle)
                 .font(.system(size: compact ? 16 : 18, weight: .bold, design: .rounded))
                 .foregroundColor(Palette.ink)
-                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
             Text(game.missionDetail)
                 .font(.system(size: compact ? 13 : 14, design: .rounded))
                 .foregroundColor(Palette.dark)
-                .lineLimit(compact ? 2 : 3)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, minHeight: compact ? 103 : 0, alignment: .topLeading)
         .padding(compact ? 13 : 18)
@@ -260,8 +289,7 @@ struct GameView: View {
             Text(game.message)
                 .font(.system(size: compact ? 15 : 17, weight: .semibold, design: .rounded))
                 .foregroundColor(Palette.ink)
-                .lineLimit(compact ? 4 : 6)
-                .minimumScaleFactor(0.85)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, minHeight: compact ? 103 : 80, alignment: .topLeading)
         .padding(compact ? 13 : 18)
@@ -393,7 +421,7 @@ struct GameView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Chọn Chơi với máy hoặc Hai người chơi trên cùng iPad. Khi chơi với máy, chọn cầm quân Trắng hoặc Đen; quân Trắng luôn đi trước. Chạm một quân của bên tới lượt để thấy các ô có thể đi, rồi chạm ô đích. Nhấn Gợi ý nhiều lần để xem các phương án khác nhau. Nút Đi lại hoàn tác lượt vừa đi.")
+                    Text("Chọn Chơi với máy hoặc Hai người chơi trên cùng thiết bị. Khi chơi với máy, chọn cầm quân Trắng hoặc Đen; quân Trắng luôn đi trước. Chạm một quân của bên tới lượt để thấy các ô có thể đi, rồi chạm ô đích. Nhấn Gợi ý nhiều lần để xem các phương án khác nhau. Nút Đi lại hoàn tác lượt vừa đi.")
                         .font(.system(size: 18, design: .rounded))
                     ForEach(Kind.allCases, id: \.self) { kind in
                         HStack(alignment: .top, spacing: 12) {
