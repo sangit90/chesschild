@@ -1,6 +1,6 @@
 # Cờ Vua Của Bé
 
-Ứng dụng cờ vua cho iPad 6, viết bằng SwiftUI. Có thể chọn **Chơi với máy** hoặc **Hai người chơi** trên cùng iPad. Trong chế độ hai người, quân Trắng và Đen lần lượt đi; nút **Đi lại** hoàn tác một nước. Trong chế độ chơi với máy, bé cầm quân trắng và có bốn thử thách đầu tiên: kiểm soát trung tâm, phát triển Mã, ăn quân và nhập thành. Máy có hai mức **Tập chơi** và **Thử thách**. Bấm **Gợi ý** nhiều lần để lần lượt xem các phương án khác nhau cho bên đang đi; danh sách được làm mới sau mỗi nước đi. Tiến bộ khi chơi với máy (số ván, số thắng, sao thử thách) được lưu trên iPad.
+Ứng dụng cờ vua cho iPad 6, viết bằng SwiftUI. Có thể chọn **Chơi với máy** hoặc **Hai người chơi** trên cùng iPad. Trong chế độ hai người, quân Trắng và Đen lần lượt đi; nút **Đi lại** hoàn tác một nước. Trong chế độ chơi với máy, bé chọn cầm quân **Trắng** hoặc **Đen**; nếu chọn Đen, bàn cờ xoay về phía bé, chữ cái cột chuyển lên trên, số hàng chuyển sang phải và máy đi trước. Đổi màu quân bắt đầu ván mới. Bé có bốn thử thách đầu tiên: kiểm soát trung tâm, phát triển Mã, ăn quân và nhập thành. Máy có hai mức **Tập chơi** và **Thử thách**. Bấm **Gợi ý** nhiều lần để lần lượt xem các phương án khác nhau cho bên đang đi; danh sách được làm mới sau mỗi nước đi. Tiến bộ khi chơi với máy (số ván, số thắng, sao thử thách) được lưu trên iPad.
 
 ## Tạo IPA bằng GitHub Actions
 

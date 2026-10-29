@@ -56,6 +56,7 @@ struct GameView: View {
             )
         }
         .sheet(isPresented: $showingRules) { rulesSheet }
+        .onAppear { if game.mode == .computer && game.position.turn != game.playerSide { computerTurn() } }
     }
 
     private var header: some View {
@@ -84,30 +85,32 @@ struct GameView: View {
         let size = side / 8
         return VStack(spacing: 8) {
             HStack {
-                Label(game.mode == .twoPlayers ? "Lượt của \(game.position.turn == .white ? "Trắng" : "Đen")" : (game.position.turn == .white ? "Lượt của bé" : "Máy đang nghĩ..."), systemImage: game.mode == .computer && game.position.turn == .black ? "sparkles" : "hand.point.up.left.fill")
+                Label(game.mode == .twoPlayers ? "Lượt của \(game.position.turn == .white ? "Trắng" : "Đen")" : (game.position.turn == game.playerSide ? "Lượt của bé" : "Máy đang nghĩ..."), systemImage: game.mode == .computer && game.position.turn != game.playerSide ? "sparkles" : "hand.point.up.left.fill")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                 Spacer()
                 HStack(spacing: 5) {
                     Circle().fill(Palette.cream).overlay(Circle().stroke(Palette.ink, lineWidth: 1)).frame(width: 13, height: 13)
-                    Text(game.mode == .computer ? "BÉ" : "TRẮNG")
+                    Text(game.mode == .computer && game.playerSide == .white ? "BÉ" : (game.mode == .computer ? "MÁY" : "TRẮNG"))
                     Text("•").padding(.horizontal, 2)
                     Circle().fill(Palette.ink).frame(width: 13, height: 13)
-                    Text(game.mode == .computer ? "MÁY" : "ĐEN")
+                    Text(game.mode == .computer && game.playerSide == .black ? "BÉ" : (game.mode == .computer ? "MÁY" : "ĐEN"))
                 }
                 .font(.system(size: 11, weight: .bold, design: .rounded))
             }
             .foregroundColor(Palette.ink)
 
+            if isBoardFlipped { fileLabels(side: side) }
+
             ZStack(alignment: .topLeading) {
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(size), spacing: 0), count: 8), spacing: 0) {
                     ForEach(0..<64, id: \.self) { index in
-                        square(index, size: size)
+                        square(boardIndex(index), size: size)
                     }
                 }
                 if let moving {
                     pieceView(moving.piece, size: size)
-                        .position(x: CGFloat(movingAt % 8) * size + size / 2,
-                                  y: CGFloat(movingAt / 8) * size + size / 2)
+                        .position(x: CGFloat(boardIndex(movingAt) % 8) * size + size / 2,
+                                  y: CGFloat(boardIndex(movingAt) / 8) * size + size / 2)
                         .allowsHitTesting(false)
                         .zIndex(10)
                 }
@@ -117,18 +120,32 @@ struct GameView: View {
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Palette.ink.opacity(0.14), lineWidth: 2))
             .shadow(color: Palette.ink.opacity(0.16), radius: 12, y: 7)
 
-            HStack {
-                ForEach(0..<8, id: \.self) { col in
-                    Text(String(UnicodeScalar(65 + col)!))
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .frame(width: side)
-            .font(.system(size: 11, weight: .bold, design: .rounded))
-            .foregroundColor(Palette.dark)
+            if !isBoardFlipped { fileLabels(side: side) }
         }
         .padding(14)
         .background(.white.opacity(0.76), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+    }
+
+    private var isBoardFlipped: Bool {
+        game.mode == .computer && game.playerSide == .black
+    }
+
+    private func fileLabels(side: CGFloat) -> some View {
+        HStack {
+            ForEach(0..<8, id: \.self) { col in
+                Text(String(UnicodeScalar(isBoardFlipped ? 72 - col : 65 + col)!))
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .frame(width: side)
+        .font(.system(size: 11, weight: .bold, design: .rounded))
+        .foregroundColor(Palette.dark)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Chữ cái các cột")
+    }
+
+    private func boardIndex(_ index: Int) -> Int {
+        isBoardFlipped ? 63 - index : index
     }
 
     private func square(_ index: Int, size: CGFloat) -> some View {
@@ -156,11 +173,11 @@ struct GameView: View {
                     .scaleEffect(game.selected == index ? 1.12 : 1)
                     .animation(.spring(response: 0.22, dampingFraction: 0.65), value: game.selected)
             }
-            if index % 8 == 0 {
+            if boardIndex(index) % 8 == (isBoardFlipped ? 7 : 0) {
                 Text("\(8 - index / 8)")
                     .font(.system(size: max(9, size * 0.16), weight: .heavy, design: .rounded))
                     .foregroundColor((index / 8).isMultiple(of: 2) ? Palette.dark : Palette.light)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: isBoardFlipped ? .topTrailing : .topLeading)
                     .padding(3)
             }
         }
@@ -180,7 +197,7 @@ struct GameView: View {
         VStack(spacing: compact ? 9 : 12) {
             HStack(spacing: 8) {
                 modeMenu
-                if game.mode == .computer { difficultyMenu }
+                if game.mode == .computer { colorMenu; difficultyMenu }
             }
             if game.mode == .computer && compact {
                 HStack(alignment: .top, spacing: 10) {
@@ -251,7 +268,7 @@ struct GameView: View {
 
     private var hintButton: some View {
         action("Gợi ý", icon: "lightbulb.fill", color: Palette.gold) { game.hint() }
-            .disabled((game.mode == .computer && game.position.turn != .white) || game.isFinished || moving != nil)
+            .disabled((game.mode == .computer && game.position.turn != game.playerSide) || game.isFinished || moving != nil)
     }
 
     private var undoButton: some View {
@@ -260,7 +277,7 @@ struct GameView: View {
     }
 
     private var newGameButton: some View {
-        action("Ván mới", icon: "arrow.clockwise", color: Palette.light) { game.reset() }
+        action("Ván mới", icon: "arrow.clockwise", color: Palette.light) { game.reset(); startComputerIfNeeded() }
             .disabled(moving != nil)
     }
 
@@ -277,9 +294,23 @@ struct GameView: View {
         }
     }
 
+    private var colorMenu: some View {
+        Menu {
+            Button("Cầm quân Trắng") { game.setPlayerSide(.white); startComputerIfNeeded() }
+            Button("Cầm quân Đen") { game.setPlayerSide(.black); startComputerIfNeeded() }
+        } label: {
+            Label(game.playerSide == .white ? "Trắng" : "Đen", systemImage: "circle.lefthalf.filled")
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundColor(Palette.ink)
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .background(Palette.light, in: RoundedRectangle(cornerRadius: 14))
+        }
+        .disabled(moving != nil)
+    }
+
     private var modeMenu: some View {
         Menu {
-            Button("Chơi với máy") { game.setMode(.computer) }
+            Button("Chơi với máy") { game.setMode(.computer); startComputerIfNeeded() }
             Button("Hai người chơi") { game.setMode(.twoPlayers) }
         } label: {
             Label(game.mode == .computer ? "Chơi với máy" : "Hai người chơi", systemImage: "person.2.fill")
@@ -323,26 +354,31 @@ struct GameView: View {
             if celebrate {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
-            if game.mode == .computer && game.position.turn == .black && !game.isFinished { computerTurn() }
+            startComputerIfNeeded()
         }
+    }
+
+    private func startComputerIfNeeded() {
+        if game.mode == .computer && game.position.turn != game.playerSide && !game.isFinished { computerTurn() }
     }
 
     private func computerTurn() {
         guard game.mode == .computer && !pendingComputer else { return }
         pendingComputer = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-            guard game.mode == .computer, game.position.turn == .black, moving == nil else {
+            guard game.mode == .computer, game.position.turn != game.playerSide, moving == nil else {
                 pendingComputer = false
                 return
             }
             let snapshot = game.position
             let difficulty = game.difficulty
+            let computerSide = game.playerSide.opponent
             DispatchQueue.global(qos: .userInitiated).async {
-                let move = ChessCoach.bestMove(in: snapshot, for: .black, difficulty: difficulty)
+                let move = ChessCoach.bestMove(in: snapshot, for: computerSide, difficulty: difficulty)
                 DispatchQueue.main.async {
                     pendingComputer = false
-                    guard game.mode == .computer, game.position == snapshot, moving == nil else {
-                        if game.mode == .computer && game.position.turn == .black && moving == nil { computerTurn() }
+                    guard game.mode == .computer, game.position == snapshot, game.playerSide.opponent == computerSide, moving == nil else {
+                        if game.mode == .computer && game.position.turn != game.playerSide && moving == nil { computerTurn() }
                         return
                     }
                     if let move { animate(move) }
@@ -355,7 +391,7 @@ struct GameView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Chọn Chơi với máy hoặc Hai người chơi trên cùng iPad. Quân trắng đi trước. Chạm một quân của bên tới lượt để thấy các ô có thể đi, rồi chạm ô đích. Nhấn Gợi ý nhiều lần để xem các phương án khác nhau. Nút Đi lại hoàn tác lượt vừa đi.")
+                    Text("Chọn Chơi với máy hoặc Hai người chơi trên cùng iPad. Khi chơi với máy, chọn cầm quân Trắng hoặc Đen; quân Trắng luôn đi trước. Chạm một quân của bên tới lượt để thấy các ô có thể đi, rồi chạm ô đích. Nhấn Gợi ý nhiều lần để xem các phương án khác nhau. Nút Đi lại hoàn tác lượt vừa đi.")
                         .font(.system(size: 18, design: .rounded))
                     ForEach(Kind.allCases, id: \.self) { kind in
                         HStack(alignment: .top, spacing: 12) {
