@@ -99,7 +99,7 @@ struct GameView: View {
             }
             .foregroundColor(Palette.ink)
 
-            if isBoardFlipped { fileLabels(side: side) }
+            fileLabels(side: side)
 
             ZStack(alignment: .topLeading) {
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(size), spacing: 0), count: 8), spacing: 0) {
@@ -120,7 +120,7 @@ struct GameView: View {
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Palette.ink.opacity(0.14), lineWidth: 2))
             .shadow(color: Palette.ink.opacity(0.16), radius: 12, y: 7)
 
-            if !isBoardFlipped { fileLabels(side: side) }
+            fileLabels(side: side)
         }
         .padding(14)
         .background(.white.opacity(0.76), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
@@ -173,11 +173,11 @@ struct GameView: View {
                     .scaleEffect(game.selected == index ? 1.12 : 1)
                     .animation(.spring(response: 0.22, dampingFraction: 0.65), value: game.selected)
             }
-            if boardIndex(index) % 8 == (isBoardFlipped ? 7 : 0) {
+            if boardIndex(index) % 8 == 0 || boardIndex(index) % 8 == 7 {
                 Text("\(8 - index / 8)")
                     .font(.system(size: max(9, size * 0.16), weight: .heavy, design: .rounded))
-                    .foregroundColor((index / 8).isMultiple(of: 2) ? Palette.dark : Palette.light)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: isBoardFlipped ? .topTrailing : .topLeading)
+                    .foregroundColor((index / 8 + index % 8).isMultiple(of: 2) ? Palette.dark : Palette.light)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: boardIndex(index) % 8 == 0 ? .topLeading : .topTrailing)
                     .padding(3)
             }
         }
