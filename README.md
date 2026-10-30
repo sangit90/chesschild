@@ -13,9 +13,17 @@ IPA từ Actions **chưa được ký**; không cài trực tiếp bằng ứng 
 
 ## Phát triển trên Mac
 
+Để build IPA chưa ký trực tiếp trên Mac, cài Xcode rồi chạy tại thư mục dự án:
+
 ```sh
-brew install xcodegen
-xcodegen generate
+bash build_ipa.sh
+```
+
+Kết quả nằm tại `build/ipa/ChessChild-unsigned.ipa`.
+
+Để tải IPA lên server như script mẫu, chạy `bash build_ipa.sh --upload`. Mặc định script dùng `root@192.168.11.224:/home/smartnet/`; có thể đổi bằng các biến môi trường `CHESSCHILD_SERVER_USER`, `CHESSCHILD_SERVER_HOST`, `CHESSCHILD_SERVER_PATH`. Lệnh `scp` sẽ dùng SSH key hoặc hỏi mật khẩu theo cấu hình Mac của bạn; thư mục đích phải tồn tại.
+
+```sh
 open ChessChild.xcodeproj
 ```
 

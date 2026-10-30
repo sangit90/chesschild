@@ -1,6 +1,6 @@
 .DS_Store
-ChessChild.xcodeproj/
 DerivedData/
+build/
 Payload/
 *.ipa
 *.xcuserstate
