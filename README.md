@@ -27,6 +27,8 @@ Kết quả nằm tại `build/ipa/ChessChild-unsigned.ipa`.
 open ChessChild.xcodeproj
 ```
 
+Trong Xcode, scheme `ChessChild` gồm ứng dụng, `ChessChildTests` và `ChessChildUITests`, tương tự cách tổ chức của project IPTV. Chọn **Product → Test** để chạy hai target test trên iPhone hoặc iPad Simulator. `Tests/main.swift` vẫn là bộ kiểm tra luật cờ dùng trong GitHub Actions.
+
 Project dùng iOS 15 làm mức tối thiểu và hỗ trợ cả iPhone lẫn iPad. Khi chạy từ Xcode trên thiết bị, chọn Team ký ứng dụng của bạn trong phần Signing & Capabilities. GitHub Actions build trên macOS và đóng gói IPA chưa ký để dùng với Sideloadly, nên không cần đưa chứng chỉ Apple lên GitHub.
 
 ## Phạm vi bản đầu
