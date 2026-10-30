@@ -15,61 +15,92 @@ private struct MovingPiece {
     let to: Int
 }
 
+private struct MeasuredHeightKey: PreferenceKey {
+    static var defaultValue: [String: CGFloat] = [:]
+
+    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
 struct GameView: View {
     @StateObject private var game = GameSession()
     @State private var moving: MovingPiece? = nil
     @State private var movingAt: Int = 0
     @State private var showingRules = false
     @State private var pendingComputer = false
+    @State private var headerHeight: CGFloat = 56
+    @State private var controlsHeight: CGFloat = 280
+    @State private var boardChrome: CGFloat = 76
 
     var body: some View {
         GeometryReader { geometry in
             let contentWidth = max(0, geometry.size.width - 32)
-            let sideBySide = contentWidth >= 700 && geometry.size.width > geometry.size.height
-            let narrow = contentWidth < 600
-            let boardSide = max(0, min(640, sideBySide
-                ? contentWidth - 18 - 28 - 320
-                : contentWidth - 28))
+            let sideBySide = contentWidth >= 520 && geometry.size.width > geometry.size.height
+            let tinyLandscape = sideBySide && geometry.size.height < 360
+            let micro = geometry.size.width < 360 || geometry.size.height < 360
+            let compact = !sideBySide || geometry.size.height < 600
+            let controlsWidth: CGFloat = sideBySide ? (tinyLandscape ? 230 : (geometry.size.height < 600 ? 280 : 320)) : min(contentWidth, 668)
+            let widthLimit = sideBySide ? contentWidth - 18 - 28 - controlsWidth : contentWidth - 28
+            let heightLimit = geometry.size.height - 24 - headerHeight - boardChrome - (sideBySide ? 0 : controlsHeight + 8)
+            let boardSide = max(0, min(640, widthLimit, heightLimit))
 
-            ScrollView {
-                VStack(spacing: 12) {
-                    header
-                    if sideBySide {
-                        HStack(alignment: .top, spacing: 18) {
-                            boardCard(side: boardSide, narrow: false)
-                                .frame(width: boardSide + 28)
-                            controls(compact: false, narrow: false)
-                                .frame(width: 320)
-                        }
-                    } else {
-                        boardCard(side: boardSide, narrow: narrow)
-                            .frame(width: boardSide + 28)
-                        controls(compact: true, narrow: narrow)
-                            .frame(width: boardSide + 28)
+            VStack(spacing: 8) {
+                header(compact: compact)
+                    .background(GeometryReader { proxy in
+                        Color.clear.preference(key: MeasuredHeightKey.self, value: ["header": proxy.size.height])
+                    })
+                if sideBySide {
+                    HStack(alignment: .top, spacing: 18) {
+                        boardCard(side: boardSide, compact: compact, micro: micro)
+                            .frame(width: boardSide + (compact ? 20 : 28))
+                            .background(GeometryReader { proxy in
+                                Color.clear.preference(key: MeasuredHeightKey.self, value: ["board": proxy.size.height - boardSide])
+                            })
+                        controls(compact: compact, tiny: tinyLandscape)
+                            .frame(width: controlsWidth)
+                            .background(GeometryReader { proxy in
+                                Color.clear.preference(key: MeasuredHeightKey.self, value: ["controls": proxy.size.height])
+                            })
                     }
+                } else {
+                    boardCard(side: boardSide, compact: true, micro: micro)
+                        .frame(width: boardSide + 20)
+                        .background(GeometryReader { proxy in
+                            Color.clear.preference(key: MeasuredHeightKey.self, value: ["board": proxy.size.height - boardSide])
+                        })
+                    controls(compact: true, tiny: false)
+                        .frame(width: controlsWidth)
+                        .background(GeometryReader { proxy in
+                            Color.clear.preference(key: MeasuredHeightKey.self, value: ["controls": proxy.size.height])
+                        })
                 }
-                .frame(maxWidth: .infinity, alignment: .top)
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(
                 LinearGradient(colors: [Palette.cream, Color(red: 0.86, green: 0.94, blue: 0.91)], startPoint: .topLeading, endPoint: .bottomTrailing)
                     .ignoresSafeArea()
             )
+            .onPreferenceChange(MeasuredHeightKey.self) { heights in
+                if let value = heights["header"] { headerHeight = value }
+                if let value = heights["controls"] { controlsHeight = value }
+                if let value = heights["board"] { boardChrome = value }
+            }
         }
         .sheet(isPresented: $showingRules) { rulesSheet }
         .onAppear { if game.mode == .computer && game.position.turn != game.playerSide { computerTurn() } }
     }
 
-    private var header: some View {
+    private func header(compact: Bool) -> some View {
         HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: compact ? 1 : 4) {
                 Text("CỜ VUA CỦA BÉ")
-                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                    .font(.system(size: compact ? 11 : 13, weight: .heavy, design: .rounded))
                     .foregroundColor(Palette.dark)
                 Text("Mỗi nước đi, một điều mới ✨")
-                    .font(.system(size: 25, weight: .bold, design: .rounded))
+                    .font(.system(size: compact ? 17 : 25, weight: .bold, design: .rounded))
                     .foregroundColor(Palette.ink)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -78,7 +109,7 @@ struct GameView: View {
                 Image(systemName: "questionmark")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundColor(Palette.ink)
-                    .frame(width: 44, height: 44)
+                    .frame(width: compact ? 36 : 44, height: compact ? 36 : 44)
                     .background(.white.opacity(0.8), in: Circle())
             }
             .accessibilityLabel("Hướng dẫn chơi")
@@ -101,19 +132,18 @@ struct GameView: View {
         .font(.system(size: 11, weight: .bold, design: .rounded))
     }
 
-    private func boardCard(side: CGFloat, narrow: Bool) -> some View {
+    private func boardCard(side: CGFloat, compact: Bool, micro: Bool) -> some View {
         let size = side / 8
-        return VStack(spacing: 8) {
+        return VStack(spacing: compact ? 4 : 8) {
             Group {
-                if narrow {
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    if micro {
+                        Text(game.mode == .twoPlayers ? (game.position.turn == .white ? "Trắng đi" : "Đen đi") : (game.position.turn == game.playerSide ? "Bé đi" : "Máy đi"))
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                    } else {
                         turnLabel
-                        sideLegend.frame(maxWidth: .infinity, alignment: .trailing)
-                    }
-                } else {
-                    HStack {
-                        turnLabel
-                        Spacer()
+                            .font(.system(size: compact ? 13 : 16, weight: .bold, design: .rounded))
+                        Spacer(minLength: 2)
                         sideLegend
                     }
                 }
@@ -143,7 +173,7 @@ struct GameView: View {
 
             fileLabels(side: side, opposite: false)
         }
-        .padding(14)
+        .padding(compact ? 10 : 14)
         .background(.white.opacity(0.76), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
     }
 
@@ -216,31 +246,23 @@ struct GameView: View {
         ChessPieceView(piece: piece, size: size)
     }
 
-    private func controls(compact: Bool, narrow: Bool) -> some View {
-        VStack(spacing: compact ? 9 : 12) {
-            if narrow && game.mode == .computer {
+    private func controls(compact: Bool, tiny: Bool) -> some View {
+        VStack(spacing: compact ? 6 : 12) {
+            HStack(spacing: 6) {
                 modeMenu
-                HStack(spacing: 8) { colorMenu; difficultyMenu }
-            } else {
-                HStack(spacing: 8) {
-                    modeMenu
-                    if game.mode == .computer { colorMenu; difficultyMenu }
-                }
+                if game.mode == .computer { colorMenu; difficultyMenu }
             }
-            if game.mode == .computer && compact && !narrow {
-                HStack(alignment: .top, spacing: 10) {
-                    missionCard(compact: true)
-                    coachCard(compact: true)
+            if game.mode == .computer && compact {
+                HStack(alignment: .top, spacing: 6) {
+                    missionCard(compact: true, tiny: tiny)
+                    coachCard(compact: true, tiny: tiny)
                 }
             } else {
-                if game.mode == .computer { missionCard(compact: false) }
-                coachCard(compact: false)
+                if game.mode == .computer { missionCard(compact: false, tiny: false) }
+                coachCard(compact: false, tiny: false)
             }
-            if narrow {
-                HStack(spacing: 8) { hintButton; undoButton }
-                newGameButton
-            } else if compact {
-                HStack(spacing: 8) {
+            if compact {
+                HStack(spacing: 6) {
                     hintButton
                     undoButton
                     newGameButton
@@ -251,48 +273,52 @@ struct GameView: View {
             }
             if game.mode == .computer {
                 Text("Đã chơi \(game.games) ván • Thắng \(game.wins) ván")
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .font(.system(size: compact ? 11 : 13, weight: .medium, design: .rounded))
                     .foregroundColor(Palette.dark)
             }
         }
     }
 
-    private func missionCard(compact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: compact ? 4 : 6) {
+    private func missionCard(compact: Bool, tiny: Bool) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 2 : 6) {
             HStack {
-                Label("THỬ THÁCH \(min(game.lessonStage + 1, 4))/4", systemImage: "star.fill")
+                Label(tiny ? "\(min(game.lessonStage + 1, 4))/4" : "THỬ THÁCH \(min(game.lessonStage + 1, 4))/4", systemImage: "star.fill")
                     .foregroundColor(Palette.dark)
                 Spacer(minLength: 2)
                 Text("⭐ \(game.stars)")
                     .foregroundColor(Palette.ink)
             }
-            .font(.system(size: 11, weight: .heavy, design: .rounded))
+            .font(.system(size: compact ? 10 : 11, weight: .heavy, design: .rounded))
             Text(game.missionTitle)
-                .font(.system(size: compact ? 16 : 18, weight: .bold, design: .rounded))
+                .font(.system(size: tiny ? 11 : (compact ? 14 : 18), weight: .bold, design: .rounded))
                 .foregroundColor(Palette.ink)
+                .lineLimit(tiny ? 2 : nil)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(game.missionDetail)
-                .font(.system(size: compact ? 13 : 14, design: .rounded))
-                .foregroundColor(Palette.dark)
-                .fixedSize(horizontal: false, vertical: true)
+            if !tiny {
+                Text(game.missionDetail)
+                    .font(.system(size: compact ? 11 : 14, design: .rounded))
+                    .foregroundColor(Palette.dark)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .frame(maxWidth: .infinity, minHeight: compact ? 103 : 0, alignment: .topLeading)
-        .padding(compact ? 13 : 18)
+        .frame(maxWidth: .infinity, minHeight: tiny ? 70 : (compact ? 100 : 0), alignment: .topLeading)
+        .padding(tiny ? 8 : (compact ? 10 : 18))
         .background(Palette.gold.opacity(0.27), in: RoundedRectangle(cornerRadius: 20))
     }
 
-    private func coachCard(compact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: compact ? 4 : 8) {
+    private func coachCard(compact: Bool, tiny: Bool) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 2 : 8) {
             Label(game.mode == .computer ? "THẦY CỜ BÊN CẠNH" : "HƯỚNG DẪN LƯỢT CHƠI", systemImage: "sparkles")
-                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                .font(.system(size: compact ? 10 : 11, weight: .heavy, design: .rounded))
                 .foregroundColor(Palette.dark)
             Text(game.message)
-                .font(.system(size: compact ? 15 : 17, weight: .semibold, design: .rounded))
+                .font(.system(size: tiny ? 10 : (compact ? 12 : 17), weight: .semibold, design: .rounded))
                 .foregroundColor(Palette.ink)
+                .lineLimit(tiny ? 3 : nil)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, minHeight: compact ? 103 : 80, alignment: .topLeading)
-        .padding(compact ? 13 : 18)
+        .frame(maxWidth: .infinity, minHeight: tiny ? 70 : (compact ? 100 : 80), alignment: .topLeading)
+        .padding(tiny ? 8 : (compact ? 10 : 18))
         .background(.white.opacity(0.86), in: RoundedRectangle(cornerRadius: 20))
     }
 
@@ -317,9 +343,11 @@ struct GameView: View {
             Button("Thử thách") { game.difficulty = 1 }
         } label: {
             Label(game.difficulty == 0 ? "Tập chơi" : "Thử thách", systemImage: "slider.horizontal.3")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(Palette.ink)
-                .frame(maxWidth: .infinity, minHeight: 48)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, minHeight: 44)
                 .background(Palette.light, in: RoundedRectangle(cornerRadius: 14))
         }
     }
@@ -330,9 +358,11 @@ struct GameView: View {
             Button("Cầm quân Đen") { game.setPlayerSide(.black); startComputerIfNeeded() }
         } label: {
             Label(game.playerSide == .white ? "Trắng" : "Đen", systemImage: "circle.lefthalf.filled")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(Palette.ink)
-                .frame(maxWidth: .infinity, minHeight: 48)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, minHeight: 44)
                 .background(Palette.light, in: RoundedRectangle(cornerRadius: 14))
         }
         .disabled(moving != nil)
@@ -344,9 +374,11 @@ struct GameView: View {
             Button("Hai người chơi") { game.setMode(.twoPlayers) }
         } label: {
             Label(game.mode == .computer ? "Chơi với máy" : "Hai người chơi", systemImage: "person.2.fill")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(Palette.ink)
-                .frame(maxWidth: .infinity, minHeight: 48)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, minHeight: 44)
                 .background(Palette.light, in: RoundedRectangle(cornerRadius: 14))
         }
         .disabled(moving != nil)
@@ -355,9 +387,11 @@ struct GameView: View {
     private func action(_ title: String, icon: String, color: Color, handler: @escaping () -> Void) -> some View {
         Button(action: handler) {
             Label(title, systemImage: icon)
-                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(Palette.ink)
-                .frame(maxWidth: .infinity, minHeight: 48)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, minHeight: 44)
                 .background(color, in: RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(.plain)
