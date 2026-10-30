@@ -28,6 +28,7 @@ struct GameView: View {
     @State private var moving: MovingPiece? = nil
     @State private var movingAt: Int = 0
     @State private var showingRules = false
+    @State private var showingNewGameConfirmation = false
     @State private var pendingComputer = false
     @State private var headerHeight: CGFloat = 56
     @State private var controlsHeight: CGFloat = 280
@@ -90,6 +91,15 @@ struct GameView: View {
             }
         }
         .sheet(isPresented: $showingRules) { rulesSheet }
+        .alert("Bắt đầu ván mới?", isPresented: $showingNewGameConfirmation) {
+            Button("Hủy", role: .cancel) {}
+            Button("Ván mới", role: .destructive) {
+                game.reset()
+                startComputerIfNeeded()
+            }
+        } message: {
+            Text("Ván hiện tại sẽ được đặt lại.")
+        }
         .onAppear { if game.mode == .computer && game.position.turn != game.playerSide { computerTurn() } }
     }
 
@@ -333,7 +343,7 @@ struct GameView: View {
     }
 
     private var newGameButton: some View {
-        action("Ván mới", icon: "arrow.clockwise", color: Palette.light) { game.reset(); startComputerIfNeeded() }
+        action("Ván mới", icon: "arrow.clockwise", color: Palette.light) { showingNewGameConfirmation = true }
             .disabled(moving != nil)
     }
 
