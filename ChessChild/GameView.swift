@@ -254,6 +254,7 @@ struct GameView: View {
 
     private func pieceView(_ piece: Piece, size: CGFloat) -> some View {
         ChessPieceView(piece: piece, size: size)
+            .rotationEffect(.degrees(game.mode == .twoPlayers && piece.side == .black ? 180 : 0))
     }
 
     private func controls(compact: Bool, tiny: Bool) -> some View {
