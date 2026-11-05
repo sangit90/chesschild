@@ -16,7 +16,7 @@ final class GameSession: ObservableObject {
     @Published private(set) var position = ChessPosition.initial()
     @Published var selected: Int? = nil
     @Published var suggested: Move? = nil
-    @Published var message = "Chạm vào một quân trắng để xem các nước đi nhé!"
+    @Published var message = (AppLanguage.isVietnamese ? "Chạm vào một quân trắng để xem các nước đi nhé!" : "Tap a white piece to see its moves!")
     @Published var difficulty = 0
     @Published private(set) var mode: GameMode = .computer
     @Published private(set) var playerSide: Side = .white
@@ -38,26 +38,26 @@ final class GameSession: ObservableObject {
         guard let result = position.result else { return nil }
         guard position.legalMoves().isEmpty && position.inCheck(position.turn) else { return result }
         if mode == .twoPlayers {
-            return "Chiếu hết! Người chơi \(position.turn.opponent == .white ? "Trắng" : "Đen") thắng! 🎉"
+            return (AppLanguage.isVietnamese ? "Chiếu hết! Người chơi \(position.turn.opponent == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")) thắng! 🎉" : "Checkmate! Player \(position.turn.opponent == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")) wins! 🎉")
         }
-        return position.turn.opponent == playerSide ? "Chiếu hết! Bé đã thắng rồi! 🎉" : "Máy thắng ván này. Mình thử lại nhé!"
+        return position.turn.opponent == playerSide ? (AppLanguage.isVietnamese ? "Chiếu hết! Bé đã thắng rồi! 🎉" : "Checkmate! You won! 🎉") : (AppLanguage.isVietnamese ? "Máy thắng ván này. Mình thử lại nhé!" : "The computer won this game. Try again!")
     }
     var missionTitle: String {
         switch lessonStage {
-        case 0: return "Đưa Tốt vào trung tâm"
-        case 1: return "Đưa Mã ra khỏi hàng đầu"
-        case 2: return "Ăn một quân của máy"
-        case 3: return "Nhập thành để bảo vệ Vua"
-        default: return "Bé đã hoàn thành các thử thách đầu tiên!"
+        case 0: return (AppLanguage.isVietnamese ? "Đưa Tốt vào trung tâm" : "Move a pawn to the center")
+        case 1: return (AppLanguage.isVietnamese ? "Đưa Mã ra khỏi hàng đầu" : "Develop a knight")
+        case 2: return (AppLanguage.isVietnamese ? "Ăn một quân của máy" : "Capture a computer piece")
+        case 3: return (AppLanguage.isVietnamese ? "Nhập thành để bảo vệ Vua" : "Castle to protect your king")
+        default: return (AppLanguage.isVietnamese ? "Bé đã hoàn thành các thử thách đầu tiên!" : "You completed the first challenges!")
         }
     }
     var missionDetail: String {
         switch lessonStage {
-        case 0: return playerSide == .white ? "Thử đưa Tốt đến ô d4 hoặc e4." : "Thử đưa Tốt đến ô d5 hoặc e5."
-        case 1: return "Mã đi hình chữ L. Hãy đưa Mã vào cuộc chơi."
-        case 2: return "Quan sát quân nào của máy đang không được bảo vệ."
-        case 3: return "Dọn đường giữa Vua và Xe, rồi nhập thành."
-        default: return "Tiếp tục luyện tập và thử mức Thử thách nhé!"
+        case 0: return playerSide == .white ? (AppLanguage.isVietnamese ? "Thử đưa Tốt đến ô d4 hoặc e4." : "Try moving a pawn to d4 or e4.") : (AppLanguage.isVietnamese ? "Thử đưa Tốt đến ô d5 hoặc e5." : "Try moving a pawn to d5 or e5.")
+        case 1: return (AppLanguage.isVietnamese ? "Mã đi hình chữ L. Hãy đưa Mã vào cuộc chơi." : "Knights move in an L shape. Bring one into play.")
+        case 2: return (AppLanguage.isVietnamese ? "Quan sát quân nào của máy đang không được bảo vệ." : "Look for an unprotected computer piece.")
+        case 3: return (AppLanguage.isVietnamese ? "Dọn đường giữa Vua và Xe, rồi nhập thành." : "Clear the path between your king and rook, then castle.")
+        default: return (AppLanguage.isVietnamese ? "Tiếp tục luyện tập và thử mức Thử thách nhé!" : "Keep practicing and try Challenge mode!")
         }
     }
 
@@ -68,7 +68,7 @@ final class GameSession: ObservableObject {
         suggested = nil
         recordedResult = false
         clearHints()
-        message = mode == .computer ? "Ván mới bắt đầu. Bé cầm quân \(playerSide == .white ? "Trắng và đi trước" : "Đen, máy đi trước")!" : "Ván mới bắt đầu. Người chơi Trắng đi trước!"
+        message = mode == .computer ? (AppLanguage.isVietnamese ? "Ván mới bắt đầu. Bé cầm quân \(playerSide == .white ? (AppLanguage.isVietnamese ? "Trắng và đi trước" : "White and move first") : (AppLanguage.isVietnamese ? "Đen, máy đi trước" : "Black; the computer moves first"))!" : "New game. You play \(playerSide == .white ? (AppLanguage.isVietnamese ? "Trắng và đi trước" : "White and move first") : (AppLanguage.isVietnamese ? "Đen, máy đi trước" : "Black; the computer moves first"))!") : (AppLanguage.isVietnamese ? "Ván mới bắt đầu. Người chơi Trắng đi trước!" : "New game. White moves first!")
     }
 
     func setPlayerSide(_ side: Side) {
@@ -92,10 +92,10 @@ final class GameSession: ObservableObject {
             selected = index
             suggested = nil
             let count = position.legalMoves(from: index).count
-            message = "\(piece.kind.name): \(piece.kind.lesson) Có \(count) ô hợp lệ."
+            message = (AppLanguage.isVietnamese ? "\(piece.kind.name): \(piece.kind.lesson) Có \(count) ô hợp lệ." : "\(piece.kind.name): \(piece.kind.lesson) Legal squares: \(count).")
         } else {
             selected = nil
-            message = mode == .computer ? "Hãy chọn một quân \(playerSide == .white ? "Trắng" : "Đen") của bé." : "Hãy chọn quân \(position.turn == .white ? "Trắng" : "Đen") để đi."
+            message = mode == .computer ? (AppLanguage.isVietnamese ? "Hãy chọn một quân \(playerSide == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")) của bé." : "Select a \(playerSide == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")) piece of yours.") : (AppLanguage.isVietnamese ? "Hãy chọn quân \(position.turn == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")) để đi." : "Select a \(position.turn == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")) piece to move.")
         }
         return nil
     }
@@ -111,7 +111,7 @@ final class GameSession: ObservableObject {
             stars += 1
             UserDefaults.standard.set(lessonStage, forKey: "chesschild.lessonStage")
             UserDefaults.standard.set(stars, forKey: "chesschild.stars")
-            message = "Hoàn thành thử thách! Bé nhận được một ngôi sao ⭐"
+            message = (AppLanguage.isVietnamese ? "Hoàn thành thử thách! Bé nhận được một ngôi sao ⭐" : "Challenge complete! You earned a star ⭐")
         }
         selected = nil
         suggested = nil
@@ -121,23 +121,23 @@ final class GameSession: ObservableObject {
             if mode == .computer { record(message) }
         } else if mode == .twoPlayers {
             if position.inCheck(position.turn) {
-                message = "Vua \(position.turn == .white ? "Trắng" : "Đen") đang bị chiếu! Hãy tìm nước bảo vệ Vua."
+                message = (AppLanguage.isVietnamese ? "Vua \(position.turn == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")) đang bị chiếu! Hãy tìm nước bảo vệ Vua." : "King \(position.turn == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")) is in check! Find a move to protect your king.")
             } else {
-                message = "Đến lượt người chơi \(position.turn == .white ? "Trắng" : "Đen")."
+                message = (AppLanguage.isVietnamese ? "Đến lượt người chơi \(position.turn == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black"))." : "Player to move: \(position.turn == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")).")
             }
         } else if position.inCheck(position.turn) {
-            message = piece.side == playerSide ? "Hay lắm! Bé đang chiếu Vua của máy." : "Vua của bé đang bị chiếu. Hãy tìm cách bảo vệ Vua!"
+            message = piece.side == playerSide ? (AppLanguage.isVietnamese ? "Hay lắm! Bé đang chiếu Vua của máy." : "Well done! You checked the computer's king.") : (AppLanguage.isVietnamese ? "Vua của bé đang bị chiếu. Hãy tìm cách bảo vệ Vua!" : "Your king is in check. Find a way to protect it!")
         } else if move.isCastle {
-            message = "Nhập thành! Vua đã được đưa về nơi an toàn hơn."
+            message = (AppLanguage.isVietnamese ? "Nhập thành! Vua đã được đưa về nơi an toàn hơn." : "Castled! Your king is safer now.")
         } else if move.promotion != nil {
-            message = "Tốt đã đến cuối bàn cờ và hóa thành Hậu!"
+            message = (AppLanguage.isVietnamese ? "Tốt đã đến cuối bàn cờ và hóa thành Hậu!" : "Your pawn reached the last rank and became a queen!")
         } else if captured {
-            message = piece.side == playerSide ? "Bé vừa ăn một quân. Nhớ xem quân của mình có an toàn không nhé!" : "Máy vừa ăn quân. Bé có thể tìm nước đáp trả."
+            message = piece.side == playerSide ? (AppLanguage.isVietnamese ? "Bé vừa ăn một quân. Nhớ xem quân của mình có an toàn không nhé!" : "You captured a piece. Check that your pieces are safe!") : (AppLanguage.isVietnamese ? "Máy vừa ăn quân. Bé có thể tìm nước đáp trả." : "The computer captured a piece. Look for a reply.")
         } else {
-            message = piece.side == playerSide ? "Đẹp lắm! Đến lượt máy suy nghĩ..." : "Đến lượt bé. Chọn quân và thử một kế hoạch mới!"
+            message = piece.side == playerSide ? (AppLanguage.isVietnamese ? "Đẹp lắm! Đến lượt máy suy nghĩ..." : "Nice move! The computer is thinking...") : (AppLanguage.isVietnamese ? "Đến lượt bé. Chọn quân và thử một kế hoạch mới!" : "Your turn. Pick a piece and try a new plan!")
         }
         if mode == .computer && piece.side == playerSide && lessonStage > snapshots.last!.lessonStage && position.result == nil {
-            message = "Hoàn thành thử thách! Bé nhận được một ngôi sao ⭐"
+            message = (AppLanguage.isVietnamese ? "Hoàn thành thử thách! Bé nhận được một ngôi sao ⭐" : "Challenge complete! You earned a star ⭐")
         }
     }
 
@@ -145,7 +145,7 @@ final class GameSession: ObservableObject {
         guard canUndo else { return }
         if recordedResult {
             games = max(0, games - 1)
-            if resultMessage?.contains("Bé đã thắng") == true { wins = max(0, wins - 1) }
+            if position.legalMoves().isEmpty && position.inCheck(position.turn) && position.turn.opponent == playerSide { wins = max(0, wins - 1) }
             UserDefaults.standard.set(games, forKey: "chesschild.games")
             UserDefaults.standard.set(wins, forKey: "chesschild.wins")
         }
@@ -161,7 +161,7 @@ final class GameSession: ObservableObject {
         suggested = nil
         clearHints()
         recordedResult = false
-        message = mode == .computer ? "Mình thử một cách khác nhé. Chạm quân \(playerSide == .white ? "Trắng" : "Đen") để đi tiếp!" : "Đi lại! Đến lượt người chơi \(position.turn == .white ? "Trắng" : "Đen")."
+        message = mode == .computer ? (AppLanguage.isVietnamese ? "Mình thử một cách khác nhé. Chạm quân \(playerSide == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")) để đi tiếp!" : "Try another idea. Tap a \(playerSide == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")) piece to continue!") : (AppLanguage.isVietnamese ? "Đi lại! Đến lượt người chơi \(position.turn == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black"))." : "Undone! Player to move: \(position.turn == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black")).")
     }
 
     func hint() {
@@ -184,8 +184,8 @@ final class GameSession: ObservableObject {
         selected = move.from
         suggested = move
         let piece = position.squares[move.from]!
-        let anotherHint = hintChoices.count > 1 ? " Nhấn tiếp để xem cách khác!" : " Đây là nước hợp lệ duy nhất."
-        message = "Gợi ý \(nextHintIndex == 0 ? hintChoices.count : nextHintIndex)/\(hintChoices.count): đưa \(piece.kind.name) từ \(ChessPosition.coordinate(move.from)) đến \(ChessPosition.coordinate(move.to)).\(anotherHint)"
+        let anotherHint = hintChoices.count > 1 ? (AppLanguage.isVietnamese ? " Nhấn tiếp để xem cách khác!" : " Tap again for another idea!") : (AppLanguage.isVietnamese ? " Đây là nước hợp lệ duy nhất." : " This is the only legal move.")
+        message = (AppLanguage.isVietnamese ? "Gợi ý \(nextHintIndex == 0 ? hintChoices.count : nextHintIndex)/\(hintChoices.count): đưa \(piece.kind.name) từ \(ChessPosition.coordinate(move.from)) đến \(ChessPosition.coordinate(move.to)).\(anotherHint)" : "Hint \(nextHintIndex == 0 ? hintChoices.count : nextHintIndex)/\(hintChoices.count): move \(piece.kind.name) from \(ChessPosition.coordinate(move.from)) to \(ChessPosition.coordinate(move.to)).\(anotherHint)")
     }
 
     func computerMove() -> Move? {
@@ -197,7 +197,7 @@ final class GameSession: ObservableObject {
         guard !recordedResult else { return }
         recordedResult = true
         games += 1
-        if result.contains("Bé đã thắng") { wins += 1 }
+        if position.legalMoves().isEmpty && position.inCheck(position.turn) && position.turn.opponent == playerSide { wins += 1 }
         UserDefaults.standard.set(games, forKey: "chesschild.games")
         UserDefaults.standard.set(wins, forKey: "chesschild.wins")
     }

@@ -91,14 +91,14 @@ struct GameView: View {
             }
         }
         .sheet(isPresented: $showingRules) { rulesSheet }
-        .alert("Bắt đầu ván mới?", isPresented: $showingNewGameConfirmation) {
-            Button("Hủy", role: .cancel) {}
-            Button("Ván mới", role: .destructive) {
+        .alert((AppLanguage.isVietnamese ? "Bắt đầu ván mới?" : "Start a new game?"), isPresented: $showingNewGameConfirmation) {
+            Button((AppLanguage.isVietnamese ? "Hủy" : "Cancel"), role: .cancel) {}
+            Button((AppLanguage.isVietnamese ? "Ván mới" : "New game"), role: .destructive) {
                 game.reset()
                 startComputerIfNeeded()
             }
         } message: {
-            Text("Ván hiện tại sẽ được đặt lại.")
+            Text((AppLanguage.isVietnamese ? "Ván hiện tại sẽ được đặt lại." : "The current game will be reset."))
         }
         .onAppear { if game.mode == .computer && game.position.turn != game.playerSide { computerTurn() } }
     }
@@ -106,10 +106,10 @@ struct GameView: View {
     private func header(compact: Bool) -> some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: compact ? 1 : 4) {
-                Text("CỜ VUA CỦA BÉ")
+                Text((AppLanguage.isVietnamese ? "CỜ VUA CỦA BÉ" : "CHESS FOR KIDS"))
                     .font(.system(size: compact ? 11 : 13, weight: .heavy, design: .rounded))
                     .foregroundColor(Palette.dark)
-                Text("Mỗi nước đi, một điều mới ✨")
+                Text((AppLanguage.isVietnamese ? "Mỗi nước đi, một điều mới ✨" : "Learn with every move ✨"))
                     .font(.system(size: compact ? 17 : 25, weight: .bold, design: .rounded))
                     .foregroundColor(Palette.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -122,22 +122,22 @@ struct GameView: View {
                     .frame(width: compact ? 36 : 44, height: compact ? 36 : 44)
                     .background(.white.opacity(0.8), in: Circle())
             }
-            .accessibilityLabel("Hướng dẫn chơi")
+            .accessibilityLabel((AppLanguage.isVietnamese ? "Hướng dẫn chơi" : "How to play"))
         }
     }
 
     private var turnLabel: some View {
-        Label(game.mode == .twoPlayers ? "Lượt của \(game.position.turn == .white ? "Trắng" : "Đen")" : (game.position.turn == game.playerSide ? "Lượt của bé" : "Máy đang nghĩ..."), systemImage: game.mode == .computer && game.position.turn != game.playerSide ? "sparkles" : "hand.point.up.left.fill")
+        Label(game.mode == .twoPlayers ? (AppLanguage.isVietnamese ? "Lượt của \(game.position.turn == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black"))" : "Turn: \(game.position.turn == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black"))") : (game.position.turn == game.playerSide ? (AppLanguage.isVietnamese ? "Lượt của bé" : "Your turn") : (AppLanguage.isVietnamese ? "Máy đang nghĩ..." : "Computer is thinking...")), systemImage: game.mode == .computer && game.position.turn != game.playerSide ? "sparkles" : "hand.point.up.left.fill")
             .font(.system(size: 16, weight: .bold, design: .rounded))
     }
 
     private var sideLegend: some View {
         HStack(spacing: 5) {
             Circle().fill(Palette.cream).overlay(Circle().stroke(Palette.ink, lineWidth: 1)).frame(width: 13, height: 13)
-            Text(game.mode == .computer && game.playerSide == .white ? "BÉ" : (game.mode == .computer ? "MÁY" : "TRẮNG"))
+            Text(game.mode == .computer && game.playerSide == .white ? (AppLanguage.isVietnamese ? "BÉ" : "YOU") : (game.mode == .computer ? (AppLanguage.isVietnamese ? "MÁY" : "CPU") : (AppLanguage.isVietnamese ? "TRẮNG" : "WHITE")))
             Text("•").padding(.horizontal, 2)
             Circle().fill(Palette.ink).frame(width: 13, height: 13)
-            Text(game.mode == .computer && game.playerSide == .black ? "BÉ" : (game.mode == .computer ? "MÁY" : "ĐEN"))
+            Text(game.mode == .computer && game.playerSide == .black ? (AppLanguage.isVietnamese ? "BÉ" : "YOU") : (game.mode == .computer ? (AppLanguage.isVietnamese ? "MÁY" : "CPU") : (AppLanguage.isVietnamese ? "ĐEN" : "BLACK")))
         }
         .font(.system(size: 11, weight: .bold, design: .rounded))
     }
@@ -148,7 +148,7 @@ struct GameView: View {
             Group {
                 HStack(spacing: 4) {
                     if micro {
-                        Text(game.mode == .twoPlayers ? (game.position.turn == .white ? "Trắng đi" : "Đen đi") : (game.position.turn == game.playerSide ? "Bé đi" : "Máy đi"))
+                        Text(game.mode == .twoPlayers ? (game.position.turn == .white ? (AppLanguage.isVietnamese ? "Trắng đi" : "White to move") : (AppLanguage.isVietnamese ? "Đen đi" : "Black to move")) : (game.position.turn == game.playerSide ? (AppLanguage.isVietnamese ? "Bé đi" : "Your turn") : (AppLanguage.isVietnamese ? "Máy đi" : "Computer's turn")))
                             .font(.system(size: 11, weight: .bold, design: .rounded))
                     } else {
                         turnLabel
@@ -203,7 +203,7 @@ struct GameView: View {
         .font(.system(size: 11, weight: .bold, design: .rounded))
         .foregroundColor(Palette.dark)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Chữ cái các cột")
+        .accessibilityLabel((AppLanguage.isVietnamese ? "Chữ cái các cột" : "Board file labels"))
     }
 
     private func boardIndex(_ index: Int) -> Int {
@@ -248,7 +248,7 @@ struct GameView: View {
         .contentShape(Rectangle())
         .onTapGesture { tap(index) }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Ô \(ChessPosition.coordinate(index)), \(game.position.squares[index].map { "\($0.kind.name) \($0.side == .white ? "trắng" : "đen")" } ?? "trống")")
+        .accessibilityLabel((AppLanguage.isVietnamese ? "Ô \(ChessPosition.coordinate(index)), \(game.position.squares[index].map { "\($0.kind.name) \($0.side == .white ? (AppLanguage.isVietnamese ? "trắng" : "white") : (AppLanguage.isVietnamese ? "đen" : "black"))" } ?? (AppLanguage.isVietnamese ? "trống" : "empty"))" : "Square \(ChessPosition.coordinate(index)), \(game.position.squares[index].map { "\($0.kind.name) \($0.side == .white ? (AppLanguage.isVietnamese ? "trắng" : "white") : (AppLanguage.isVietnamese ? "đen" : "black"))" } ?? (AppLanguage.isVietnamese ? "trống" : "empty"))"))
         .accessibilityAddTraits(.isButton)
     }
 
@@ -283,7 +283,7 @@ struct GameView: View {
                 newGameButton
             }
             if game.mode == .computer {
-                Text("Đã chơi \(game.games) ván • Thắng \(game.wins) ván")
+                Text((AppLanguage.isVietnamese ? "Đã chơi \(game.games) ván • Thắng \(game.wins) ván" : "Games played: \(game.games) • Wins: \(game.wins) games"))
                     .font(.system(size: compact ? 11 : 13, weight: .medium, design: .rounded))
                     .foregroundColor(Palette.dark)
             }
@@ -293,7 +293,7 @@ struct GameView: View {
     private func missionCard(compact: Bool, tiny: Bool) -> some View {
         VStack(alignment: .leading, spacing: compact ? 2 : 6) {
             HStack {
-                Label(tiny ? "\(min(game.lessonStage + 1, 4))/4" : "THỬ THÁCH \(min(game.lessonStage + 1, 4))/4", systemImage: "star.fill")
+                Label(tiny ? "\(min(game.lessonStage + 1, 4))/4" : (AppLanguage.isVietnamese ? "THỬ THÁCH \(min(game.lessonStage + 1, 4))/4" : "CHALLENGE \(min(game.lessonStage + 1, 4))/4"), systemImage: "star.fill")
                     .foregroundColor(Palette.dark)
                 Spacer(minLength: 2)
                 Text("⭐ \(game.stars)")
@@ -319,7 +319,7 @@ struct GameView: View {
 
     private func coachCard(compact: Bool, tiny: Bool) -> some View {
         VStack(alignment: .leading, spacing: compact ? 2 : 8) {
-            Label(game.mode == .computer ? "THẦY CỜ BÊN CẠNH" : "HƯỚNG DẪN LƯỢT CHƠI", systemImage: "sparkles")
+            Label(game.mode == .computer ? (AppLanguage.isVietnamese ? "THẦY CỜ BÊN CẠNH" : "YOUR CHESS COACH") : (AppLanguage.isVietnamese ? "HƯỚNG DẪN LƯỢT CHƠI" : "TURN GUIDE"), systemImage: "sparkles")
                 .font(.system(size: compact ? 10 : 11, weight: .heavy, design: .rounded))
                 .foregroundColor(Palette.dark)
             Text(game.message)
@@ -334,26 +334,26 @@ struct GameView: View {
     }
 
     private var hintButton: some View {
-        action("Gợi ý", icon: "lightbulb.fill", color: Palette.gold) { game.hint() }
+        action((AppLanguage.isVietnamese ? "Gợi ý" : "Hint"), icon: "lightbulb.fill", color: Palette.gold) { game.hint() }
             .disabled((game.mode == .computer && game.position.turn != game.playerSide) || game.isFinished || moving != nil)
     }
 
     private var undoButton: some View {
-        action("Đi lại", icon: "arrow.uturn.backward", color: Palette.light) { game.undo() }
+        action((AppLanguage.isVietnamese ? "Đi lại" : "Undo"), icon: "arrow.uturn.backward", color: Palette.light) { game.undo() }
             .disabled(!game.canUndo || moving != nil)
     }
 
     private var newGameButton: some View {
-        action("Ván mới", icon: "arrow.clockwise", color: Palette.light) { showingNewGameConfirmation = true }
+        action((AppLanguage.isVietnamese ? "Ván mới" : "New game"), icon: "arrow.clockwise", color: Palette.light) { showingNewGameConfirmation = true }
             .disabled(moving != nil)
     }
 
     private var difficultyMenu: some View {
         Menu {
-            Button("Tập chơi") { game.difficulty = 0 }
-            Button("Thử thách") { game.difficulty = 1 }
+            Button((AppLanguage.isVietnamese ? "Tập chơi" : "Practice")) { game.difficulty = 0 }
+            Button((AppLanguage.isVietnamese ? "Thử thách" : "Challenge")) { game.difficulty = 1 }
         } label: {
-            Label(game.difficulty == 0 ? "Tập chơi" : "Thử thách", systemImage: "slider.horizontal.3")
+            Label(game.difficulty == 0 ? (AppLanguage.isVietnamese ? "Tập chơi" : "Practice") : (AppLanguage.isVietnamese ? "Thử thách" : "Challenge"), systemImage: "slider.horizontal.3")
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(Palette.ink)
                 .lineLimit(1)
@@ -365,10 +365,10 @@ struct GameView: View {
 
     private var colorMenu: some View {
         Menu {
-            Button("Cầm quân Trắng") { game.setPlayerSide(.white); startComputerIfNeeded() }
-            Button("Cầm quân Đen") { game.setPlayerSide(.black); startComputerIfNeeded() }
+            Button((AppLanguage.isVietnamese ? "Cầm quân Trắng" : "Play as White")) { game.setPlayerSide(.white); startComputerIfNeeded() }
+            Button((AppLanguage.isVietnamese ? "Cầm quân Đen" : "Play as Black")) { game.setPlayerSide(.black); startComputerIfNeeded() }
         } label: {
-            Label(game.playerSide == .white ? "Trắng" : "Đen", systemImage: "circle.lefthalf.filled")
+            Label(game.playerSide == .white ? (AppLanguage.isVietnamese ? "Trắng" : "White") : (AppLanguage.isVietnamese ? "Đen" : "Black"), systemImage: "circle.lefthalf.filled")
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(Palette.ink)
                 .lineLimit(1)
@@ -381,10 +381,10 @@ struct GameView: View {
 
     private var modeMenu: some View {
         Menu {
-            Button("Chơi với máy") { game.setMode(.computer); startComputerIfNeeded() }
-            Button("Hai người chơi") { game.setMode(.twoPlayers) }
+            Button((AppLanguage.isVietnamese ? "Chơi với máy" : "Play computer")) { game.setMode(.computer); startComputerIfNeeded() }
+            Button((AppLanguage.isVietnamese ? "Hai người chơi" : "Two players")) { game.setMode(.twoPlayers) }
         } label: {
-            Label(game.mode == .computer ? "Chơi với máy" : "Hai người chơi", systemImage: "person.2.fill")
+            Label(game.mode == .computer ? (AppLanguage.isVietnamese ? "Chơi với máy" : "Play computer") : (AppLanguage.isVietnamese ? "Hai người chơi" : "Two players"), systemImage: "person.2.fill")
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(Palette.ink)
                 .lineLimit(1)
@@ -466,7 +466,7 @@ struct GameView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Chọn Chơi với máy hoặc Hai người chơi trên cùng thiết bị. Khi chơi với máy, chọn cầm quân Trắng hoặc Đen; quân Trắng luôn đi trước. Chạm một quân của bên tới lượt để thấy các ô có thể đi, rồi chạm ô đích. Nhấn Gợi ý nhiều lần để xem các phương án khác nhau. Nút Đi lại hoàn tác lượt vừa đi.")
+                    Text((AppLanguage.isVietnamese ? "Chọn Chơi với máy hoặc Hai người chơi trên cùng thiết bị. Khi chơi với máy, chọn cầm quân Trắng hoặc Đen; quân Trắng luôn đi trước. Chạm một quân của bên tới lượt để thấy các ô có thể đi, rồi chạm ô đích. Nhấn Gợi ý nhiều lần để xem các phương án khác nhau. Nút Đi lại hoàn tác lượt vừa đi." : "Choose Play computer or Two players on this device. Against the computer, choose White or Black; White always moves first. Tap a piece to see legal moves, then tap its destination. Tap Hint again to explore alternatives. Undo takes back your last turn."))
                         .font(.system(size: 18, design: .rounded))
                     ForEach(Kind.allCases, id: \.self) { kind in
                         HStack(alignment: .top, spacing: 12) {
@@ -477,16 +477,16 @@ struct GameView: View {
                             }
                         }
                     }
-                    Text("Nếu một quân Tốt đến hàng cuối, quân đó tự động thành Hậu. Muốn thắng, hãy chiếu hết Vua đối phương!")
+                    Text((AppLanguage.isVietnamese ? "Nếu một quân Tốt đến hàng cuối, quân đó tự động thành Hậu. Muốn thắng, hãy chiếu hết Vua đối phương!" : "A pawn reaching the last rank automatically becomes a queen. Checkmate your opponent's king to win!"))
                         .font(.system(size: 16, design: .rounded))
                 }
                 .foregroundColor(Palette.ink)
                 .padding(24)
             }
             .background(Palette.cream)
-            .navigationTitle("Học chơi cờ")
+            .navigationTitle((AppLanguage.isVietnamese ? "Học chơi cờ" : "Learn chess"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Xong") { showingRules = false } } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button((AppLanguage.isVietnamese ? "Xong" : "Done")) { showingRules = false } } }
         }
     }
 }

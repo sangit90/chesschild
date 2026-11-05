@@ -11,23 +11,23 @@ enum Kind: String, Codable, CaseIterable {
 
     var name: String {
         switch self {
-        case .king: return "Vua"
-        case .queen: return "Hậu"
-        case .rook: return "Xe"
-        case .bishop: return "Tượng"
-        case .knight: return "Mã"
-        case .pawn: return "Tốt"
+        case .king: return (AppLanguage.isVietnamese ? "Vua" : "King")
+        case .queen: return (AppLanguage.isVietnamese ? "Hậu" : "Queen")
+        case .rook: return (AppLanguage.isVietnamese ? "Xe" : "Rook")
+        case .bishop: return (AppLanguage.isVietnamese ? "Tượng" : "Bishop")
+        case .knight: return (AppLanguage.isVietnamese ? "Mã" : "Knight")
+        case .pawn: return (AppLanguage.isVietnamese ? "Tốt" : "Pawn")
         }
     }
 
     var lesson: String {
         switch self {
-        case .king: return "Vua đi một ô theo mọi hướng. Hãy luôn giữ Vua an toàn!"
-        case .queen: return "Hậu đi ngang, dọc hoặc chéo bao nhiêu ô cũng được."
-        case .rook: return "Xe đi ngang hoặc dọc, không nhảy qua quân khác."
-        case .bishop: return "Tượng đi theo đường chéo và luôn ở cùng màu ô."
-        case .knight: return "Mã đi hình chữ L và có thể nhảy qua các quân."
-        case .pawn: return "Tốt tiến lên một ô, ăn chéo. Ở nước đầu có thể tiến hai ô."
+        case .king: return (AppLanguage.isVietnamese ? "Vua đi một ô theo mọi hướng. Hãy luôn giữ Vua an toàn!" : "The king moves one square in any direction. Keep your king safe!")
+        case .queen: return (AppLanguage.isVietnamese ? "Hậu đi ngang, dọc hoặc chéo bao nhiêu ô cũng được." : "The queen moves any number of squares horizontally, vertically or diagonally.")
+        case .rook: return (AppLanguage.isVietnamese ? "Xe đi ngang hoặc dọc, không nhảy qua quân khác." : "The rook moves horizontally or vertically and cannot jump over pieces.")
+        case .bishop: return (AppLanguage.isVietnamese ? "Tượng đi theo đường chéo và luôn ở cùng màu ô." : "The bishop moves diagonally and stays on the same square color.")
+        case .knight: return (AppLanguage.isVietnamese ? "Mã đi hình chữ L và có thể nhảy qua các quân." : "The knight moves in an L shape and can jump over pieces.")
+        case .pawn: return (AppLanguage.isVietnamese ? "Tốt tiến lên một ô, ăn chéo. Ở nước đầu có thể tiến hai ô." : "Pawns move forward one square and capture diagonally. On their first move they may advance two squares.")
         }
     }
 
@@ -209,14 +209,21 @@ struct ChessPosition: Equatable {
 
     var result: String? {
         let moves = legalMoves()
-        if moves.isEmpty { return inCheck(turn) ? (turn == .white ? "Máy thắng ván này. Mình thử lại nhé!" : "Chiếu hết! Bé đã thắng rồi! 🎉") : "Hòa cờ vì hết nước đi." }
-        if halfmoveClock >= 100 { return "Hòa cờ sau 50 lượt không ăn quân." }
+        if moves.isEmpty { return inCheck(turn) ? (turn == .white ? (AppLanguage.isVietnamese ? "Máy thắng ván này. Mình thử lại nhé!" : "The computer won this game. Try again!") : (AppLanguage.isVietnamese ? "Chiếu hết! Bé đã thắng rồi! 🎉" : "Checkmate! You won! 🎉")) : (AppLanguage.isVietnamese ? "Hòa cờ vì hết nước đi." : "Draw by stalemate.") }
+        if halfmoveClock >= 100 { return (AppLanguage.isVietnamese ? "Hòa cờ sau 50 lượt không ăn quân." : "Draw by the fifty-move rule.") }
         let active = squares.compactMap { $0 }.filter { $0.kind != .king }
-        if active.isEmpty { return "Hòa cờ vì chỉ còn hai Vua." }
+        if active.isEmpty { return (AppLanguage.isVietnamese ? "Hòa cờ vì chỉ còn hai Vua." : "Draw: only the two kings remain.") }
         return nil
     }
 
     static func coordinate(_ index: Int) -> String {
         "\(String(UnicodeScalar(97 + index % 8)!))\(8 - index / 8)"
+    }
+}
+
+// Follow the device language preference; English is the fallback.
+enum AppLanguage {
+    static var isVietnamese: Bool {
+        Locale.preferredLanguages.first?.split(separator: "-").first?.lowercased() == "vi"
     }
 }
