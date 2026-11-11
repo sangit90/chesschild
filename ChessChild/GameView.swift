@@ -30,9 +30,9 @@ struct GameView: View {
     @State private var showingRules = false
     @State private var showingNewGameConfirmation = false
     @State private var pendingComputer = false
-    @State private var headerHeight: CGFloat = 56
-    @State private var controlsHeight: CGFloat = 280
-    @State private var boardChrome: CGFloat = 76
+    @State private var headerHeight: CGFloat = 44
+    @State private var controlsHeight: CGFloat = 190
+    @State private var boardChrome: CGFloat = 54
 
     var body: some View {
         GeometryReader { geometry in
@@ -43,10 +43,13 @@ struct GameView: View {
             let compact = !sideBySide || geometry.size.height < 600
             let controlsWidth: CGFloat = sideBySide ? (tinyLandscape ? 230 : (geometry.size.height < 600 ? 280 : 320)) : min(contentWidth, 668)
             let widthLimit = sideBySide ? contentWidth - 18 - 28 - controlsWidth : contentWidth - 28
-            let heightLimit = geometry.size.height - 24 - headerHeight - boardChrome - (sideBySide ? 0 : controlsHeight + 8)
+            // Let the board claim nearly all available space. Compact controls
+            // keep the portrait layout usable without introducing scrolling.
+            let verticalChrome = sideBySide ? 0 : controlsHeight + 4
+            let heightLimit = geometry.size.height - 16 - headerHeight - boardChrome - verticalChrome
             let boardSide = max(0, min(640, widthLimit, heightLimit))
 
-            VStack(spacing: 8) {
+            VStack(spacing: 4) {
                 header(compact: compact)
                     .background(GeometryReader { proxy in
                         Color.clear.preference(key: MeasuredHeightKey.self, value: ["header": proxy.size.height])
@@ -78,7 +81,7 @@ struct GameView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.vertical, 4)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(
                 LinearGradient(colors: [Palette.cream, Color(red: 0.86, green: 0.94, blue: 0.91)], startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -258,15 +261,15 @@ struct GameView: View {
     }
 
     private func controls(compact: Bool, tiny: Bool) -> some View {
-        VStack(spacing: compact ? 6 : 12) {
+        VStack(spacing: compact ? 4 : 12) {
             HStack(spacing: 6) {
                 modeMenu
                 if game.mode == .computer { colorMenu; difficultyMenu }
             }
             if game.mode == .computer && compact {
                 HStack(alignment: .top, spacing: 6) {
-                    missionCard(compact: true, tiny: tiny)
-                    coachCard(compact: true, tiny: tiny)
+                    missionCard(compact: true, tiny: true)
+                    coachCard(compact: true, tiny: true)
                 }
             } else {
                 if game.mode == .computer { missionCard(compact: false, tiny: false) }
