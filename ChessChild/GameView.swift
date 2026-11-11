@@ -32,7 +32,7 @@ struct GameView: View {
     @State private var pendingComputer = false
     @State private var headerHeight: CGFloat = 44
     @State private var controlsHeight: CGFloat = 190
-    @State private var boardChrome: CGFloat = 54
+    @State private var boardChrome: CGFloat = 48
 
     var body: some View {
         GeometryReader { geometry in
@@ -42,7 +42,9 @@ struct GameView: View {
             let micro = geometry.size.width < 360 || geometry.size.height < 360
             let compact = !sideBySide || geometry.size.height < 600
             let controlsWidth: CGFloat = sideBySide ? (tinyLandscape ? 230 : (geometry.size.height < 600 ? 280 : 320)) : min(contentWidth, 668)
-            let widthLimit = sideBySide ? contentWidth - 18 - 28 - controlsWidth : contentWidth - 28
+            // Reserve only the card's actual padding so each square uses the
+            // largest practical touch area on the current device.
+            let widthLimit = sideBySide ? contentWidth - 18 - 28 - controlsWidth : contentWidth - 12
             // Let the board claim nearly all available space. Compact controls
             // keep the portrait layout usable without introducing scrolling.
             let verticalChrome = sideBySide ? 0 : controlsHeight + 4
@@ -69,7 +71,7 @@ struct GameView: View {
                     }
                 } else {
                     boardCard(side: boardSide, compact: true, micro: micro)
-                        .frame(width: boardSide + 20)
+                        .frame(width: boardSide + 12)
                         .background(GeometryReader { proxy in
                             Color.clear.preference(key: MeasuredHeightKey.self, value: ["board": proxy.size.height - boardSide])
                         })
@@ -186,7 +188,7 @@ struct GameView: View {
 
             fileLabels(side: side, opposite: false)
         }
-        .padding(compact ? 10 : 14)
+        .padding(compact ? 6 : 14)
         .background(.white.opacity(0.76), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
     }
 
